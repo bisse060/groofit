@@ -15,6 +15,7 @@ export const translations: Translations = {
   'nav.profile': { nl: 'Profiel', en: 'Profile' },
   'nav.dailyLogs': { nl: 'Dagelijkse Logs', en: 'Daily Logs' },
   'nav.measurements': { nl: 'Metingen', en: 'Measurements' },
+  'nav.comparisons': { nl: 'Vergelijking', en: 'Comparison' },
   'nav.photos': { nl: "Foto's", en: 'Photos' },
   'nav.admin': { nl: 'Admin', en: 'Admin' },
   'nav.logout': { nl: 'Uitloggen', en: 'Logout' },
@@ -57,6 +58,15 @@ export const translations: Translations = {
   'measurements.hips': { nl: 'Heupen (cm)', en: 'Hips (cm)' },
   'measurements.bicepLeft': { nl: 'Bicep Links (cm)', en: 'Bicep Left (cm)' },
   'measurements.bicepRight': { nl: 'Bicep Rechts (cm)', en: 'Bicep Right (cm)' },
+  
+  // Comparisons
+  'comparisons.title': { nl: 'Vergelijking', en: 'Comparison' },
+  'comparisons.selectFirst': { nl: 'Selecteer Eerste Meting', en: 'Select First Measurement' },
+  'comparisons.selectSecond': { nl: 'Selecteer Tweede Meting', en: 'Select Second Measurement' },
+  'comparisons.compare': { nl: 'Vergelijk', en: 'Compare' },
+  'comparisons.difference': { nl: 'Verschil', en: 'Difference' },
+  'comparisons.change': { nl: 'Verandering', en: 'Change' },
+  'comparisons.noData': { nl: 'Selecteer twee metingen om te vergelijken', en: 'Select two measurements to compare' },
   
   // Common
   'common.save': { nl: 'Opslaan', en: 'Save' },

@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import DailyLogs from "./pages/DailyLogs";
 import Measurements from "./pages/Measurements";
+import Comparisons from "./pages/Comparisons";
 import ProgressPhotos from "./pages/ProgressPhotos";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/daily-logs" element={<DailyLogs />} />
               <Route path="/measurements" element={<Measurements />} />
+              <Route path="/comparisons" element={<Comparisons />} />
               <Route path="/progress-photos" element={<ProgressPhotos />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />

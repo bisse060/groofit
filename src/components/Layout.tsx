@@ -9,6 +9,7 @@ import {
   User,
   FileText,
   Ruler,
+  GitCompare,
   Camera,
   Shield,
   LogOut,
@@ -28,6 +29,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/daily-logs', icon: FileText, label: t('nav.dailyLogs') },
     { path: '/measurements', icon: Ruler, label: t('nav.measurements') },
+    { path: '/comparisons', icon: GitCompare, label: t('nav.comparisons') },
     { path: '/progress-photos', icon: Camera, label: t('nav.photos') },
   ];
 
