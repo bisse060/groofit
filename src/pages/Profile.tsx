@@ -16,7 +16,6 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
-    username: '',
     full_name: '',
     current_weight: '',
     target_weight: '',
@@ -43,7 +42,6 @@ export default function Profile() {
 
       if (data) {
         setProfile({
-          username: data.username || '',
           full_name: data.full_name || '',
           current_weight: data.current_weight?.toString() || '',
           target_weight: data.target_weight?.toString() || '',
@@ -67,7 +65,6 @@ export default function Profile() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: profile.username,
           full_name: profile.full_name,
           current_weight: profile.current_weight ? parseFloat(profile.current_weight) : null,
           target_weight: profile.target_weight ? parseFloat(profile.target_weight) : null,
@@ -111,25 +108,14 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="username">{t('auth.username')}</Label>
-                  <Input
-                    id="username"
-                    value={profile.username}
-                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">{t('auth.fullName')}</Label>
-                  <Input
-                    id="full_name"
-                    value={profile.full_name}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="full_name">{t('auth.fullName')}</Label>
+                <Input
+                  id="full_name"
+                  value={profile.full_name}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  required
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">

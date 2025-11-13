@@ -25,7 +25,6 @@ export const translations: Translations = {
   'auth.email': { nl: 'E-mail', en: 'Email' },
   'auth.password': { nl: 'Wachtwoord', en: 'Password' },
   'auth.confirmPassword': { nl: 'Bevestig Wachtwoord', en: 'Confirm Password' },
-  'auth.username': { nl: 'Gebruikersnaam', en: 'Username' },
   'auth.fullName': { nl: 'Volledige Naam', en: 'Full Name' },
   'auth.noAccount': { nl: 'Nog geen account?', en: "Don't have an account?" },
   'auth.hasAccount': { nl: 'Heb je al een account?', en: 'Already have an account?' },
