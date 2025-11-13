@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import { Plus, Camera, X } from 'lucide-react';
+import { ImageCropper } from '@/components/ImageCropper';
 
 interface Measurement {
   id: string;
@@ -58,6 +59,10 @@ export default function Measurements() {
     side: null,
     back: null,
   });
+  const [cropImage, setCropImage] = useState<{
+    type: 'front' | 'side' | 'back' | null;
+    url: string | null;
+  }>({ type: null, url: null });
 
   useEffect(() => {
     if (user) {
@@ -188,8 +193,24 @@ export default function Measurements() {
     }
   };
 
-  const handlePhotoChange = (type: 'front' | 'side' | 'back', file: File | null) => {
-    setPhotos((prev) => ({ ...prev, [type]: file }));
+  const handlePhotoSelect = (type: 'front' | 'side' | 'back', file: File | null) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropImage({ type, url: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (type: 'front' | 'side' | 'back', croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], `${type}.jpg`, { type: 'image/jpeg' });
+    setPhotos((prev) => ({ ...prev, [type]: croppedFile }));
+    setCropImage({ type: null, url: null });
+  };
+
+  const handlePhotoRemove = (type: 'front' | 'side' | 'back') => {
+    setPhotos((prev) => ({ ...prev, [type]: null }));
   };
 
   if (loading) {
@@ -204,6 +225,13 @@ export default function Measurements() {
 
   return (
     <Layout>
+      {cropImage.url && cropImage.type && (
+        <ImageCropper
+          image={cropImage.url}
+          onCropComplete={(croppedBlob) => handleCropComplete(cropImage.type!, croppedBlob)}
+          onCancel={() => setCropImage({ type: null, url: null })}
+        />
+      )}
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -335,30 +363,31 @@ export default function Measurements() {
                           {type} View *
                         </Label>
                         <div className="relative">
-                          <Input
-                            id={`photo-${type}`}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0] || null;
-                              handlePhotoChange(type, file);
-                            }}
-                            className="cursor-pointer"
-                            required
-                          />
-                          {photos[type] && (
-                            <div className="mt-2 relative">
+                          {!photos[type] ? (
+                            <Input
+                              id={`photo-${type}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                handlePhotoSelect(type, file);
+                              }}
+                              className="cursor-pointer"
+                              required
+                            />
+                          ) : (
+                            <div className="relative">
                               <img
                                 src={URL.createObjectURL(photos[type]!)}
                                 alt={`${type} preview`}
-                                className="w-full h-40 object-cover rounded-lg"
+                                className="w-full aspect-[9/16] object-cover rounded-lg"
                               />
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="icon"
                                 className="absolute top-2 right-2"
-                                onClick={() => handlePhotoChange(type, null)}
+                                onClick={() => handlePhotoRemove(type)}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
