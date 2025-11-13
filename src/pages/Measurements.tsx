@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, Camera, X } from 'lucide-react';
 
 interface Measurement {
   id: string;
@@ -24,12 +24,20 @@ interface Measurement {
   notes: string | null;
 }
 
+interface ProgressPhoto {
+  id: string;
+  photo_url: string;
+  photo_type: string;
+  description: string | null;
+}
+
 export default function Measurements() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [measurementPhotos, setMeasurementPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     measurement_date: format(new Date(), 'yyyy-MM-dd'),
@@ -40,6 +48,15 @@ export default function Measurements() {
     bicep_left_cm: '',
     bicep_right_cm: '',
     notes: '',
+  });
+  const [photos, setPhotos] = useState<{
+    front: File | null;
+    side: File | null;
+    back: File | null;
+  }>({
+    front: null,
+    side: null,
+    back: null,
   });
 
   useEffect(() => {
@@ -58,6 +75,24 @@ export default function Measurements() {
 
       if (error) throw error;
       setMeasurements(data || []);
+      
+      // Load photos for each measurement
+      if (data && data.length > 0) {
+        const photoPromises = data.map(async (measurement) => {
+          const { data: photos } = await supabase
+            .from('progress_photos')
+            .select('id, photo_url, photo_type, description')
+            .eq('measurement_id', measurement.id);
+          return { measurementId: measurement.id, photos: photos || [] };
+        });
+        
+        const photoResults = await Promise.all(photoPromises);
+        const photoMap: Record<string, ProgressPhoto[]> = {};
+        photoResults.forEach(({ measurementId, photos }) => {
+          photoMap[measurementId] = photos;
+        });
+        setMeasurementPhotos(photoMap);
+      }
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -67,24 +102,72 @@ export default function Measurements() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate that all required photos are provided
+    if (!photos.front || !photos.side || !photos.back) {
+      toast.error('Please upload all three photos (front, side, back)');
+      return;
+    }
+    
     setSaving(true);
 
     try {
-      const { error } = await supabase.from('measurements').insert({
-        user_id: user?.id,
-        measurement_date: formData.measurement_date,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
-        waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
-        hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
-        bicep_left_cm: formData.bicep_left_cm ? parseFloat(formData.bicep_left_cm) : null,
-        bicep_right_cm: formData.bicep_right_cm ? parseFloat(formData.bicep_right_cm) : null,
-        notes: formData.notes,
+      // First, create the measurement
+      const { data: measurement, error: measurementError } = await supabase
+        .from('measurements')
+        .insert({
+          user_id: user?.id,
+          measurement_date: formData.measurement_date,
+          weight: formData.weight ? parseFloat(formData.weight) : null,
+          chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
+          waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
+          hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
+          bicep_left_cm: formData.bicep_left_cm ? parseFloat(formData.bicep_left_cm) : null,
+          bicep_right_cm: formData.bicep_right_cm ? parseFloat(formData.bicep_right_cm) : null,
+          notes: formData.notes,
+        })
+        .select()
+        .single();
+
+      if (measurementError) throw measurementError;
+
+      // Upload photos
+      const photoTypes: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
+      const uploadPromises = photoTypes.map(async (type) => {
+        const file = photos[type];
+        if (!file) return;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}/${measurement.id}/${type}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('progress-photos')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('progress-photos')
+          .getPublicUrl(fileName);
+
+        // Create progress_photos record
+        const { error: photoError } = await supabase.from('progress_photos').insert({
+          user_id: user?.id,
+          measurement_id: measurement.id,
+          photo_date: formData.measurement_date,
+          photo_type: type,
+          photo_url: publicUrl,
+        });
+
+        if (photoError) throw photoError;
       });
 
-      if (error) throw error;
+      await Promise.all(uploadPromises);
 
-      toast.success('Measurement saved successfully!');
+      toast.success('Measurement and photos saved successfully!');
       setShowForm(false);
       setFormData({
         measurement_date: format(new Date(), 'yyyy-MM-dd'),
@@ -96,12 +179,17 @@ export default function Measurements() {
         bicep_right_cm: '',
         notes: '',
       });
+      setPhotos({ front: null, side: null, back: null });
       loadMeasurements();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePhotoChange = (type: 'front' | 'side' | 'back', file: File | null) => {
+    setPhotos((prev) => ({ ...prev, [type]: file }));
   };
 
   if (loading) {
@@ -231,6 +319,57 @@ export default function Measurements() {
                   />
                 </div>
 
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Camera className="h-5 w-5" />
+                    Progress Photos (Required)
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload photos from front, side, and back views
+                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {(['front', 'side', 'back'] as const).map((type) => (
+                      <div key={type} className="space-y-2">
+                        <Label htmlFor={`photo-${type}`} className="capitalize">
+                          {type} View *
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id={`photo-${type}`}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              handlePhotoChange(type, file);
+                            }}
+                            className="cursor-pointer"
+                            required
+                          />
+                          {photos[type] && (
+                            <div className="mt-2 relative">
+                              <img
+                                src={URL.createObjectURL(photos[type]!)}
+                                alt={`${type} preview`}
+                                className="w-full h-40 object-cover rounded-lg"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2"
+                                onClick={() => handlePhotoChange(type, null)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <Button type="submit" disabled={saving} className="flex-1">
                     {saving ? t('common.loading') : t('common.save')}
@@ -238,7 +377,10 @@ export default function Measurements() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => {
+                      setShowForm(false);
+                      setPhotos({ front: null, side: null, back: null });
+                    }}
                     className="flex-1"
                   >
                     {t('common.cancel')}
@@ -250,58 +392,89 @@ export default function Measurements() {
         )}
 
         <div className="grid gap-4">
-          {measurements.map((measurement) => (
-            <Card key={measurement.id}>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  {format(new Date(measurement.measurement_date), 'MMMM dd, yyyy')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2 md:grid-cols-3">
-                  {measurement.weight && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Weight</p>
-                      <p className="font-semibold">{measurement.weight} kg</p>
+          {measurements.map((measurement) => {
+            const photos = measurementPhotos[measurement.id] || [];
+            return (
+              <Card key={measurement.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {format(new Date(measurement.measurement_date), 'MMMM dd, yyyy')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {measurement.weight && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Weight</p>
+                        <p className="font-semibold">{measurement.weight} kg</p>
+                      </div>
+                    )}
+                    {measurement.chest_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Chest</p>
+                        <p className="font-semibold">{measurement.chest_cm} cm</p>
+                      </div>
+                    )}
+                    {measurement.waist_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Waist</p>
+                        <p className="font-semibold">{measurement.waist_cm} cm</p>
+                      </div>
+                    )}
+                    {measurement.hips_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hips</p>
+                        <p className="font-semibold">{measurement.hips_cm} cm</p>
+                      </div>
+                    )}
+                    {measurement.bicep_left_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Bicep Left</p>
+                        <p className="font-semibold">{measurement.bicep_left_cm} cm</p>
+                      </div>
+                    )}
+                    {measurement.bicep_right_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Bicep Right</p>
+                        <p className="font-semibold">{measurement.bicep_right_cm} cm</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {photos.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <Camera className="h-4 w-4" />
+                        Progress Photos
+                      </h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['front', 'side', 'back'].map((type) => {
+                          const photo = photos.find((p) => p.photo_type === type);
+                          return photo ? (
+                            <div key={type} className="space-y-1">
+                              <img
+                                src={photo.photo_url}
+                                alt={`${type} view`}
+                                className="w-full aspect-[9/16] object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => window.open(photo.photo_url, '_blank')}
+                              />
+                              <p className="text-xs text-center text-muted-foreground capitalize">
+                                {type}
+                              </p>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
                     </div>
                   )}
-                  {measurement.chest_cm && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Chest</p>
-                      <p className="font-semibold">{measurement.chest_cm} cm</p>
-                    </div>
+                  
+                  {measurement.notes && (
+                    <p className="text-sm text-muted-foreground border-t pt-4">{measurement.notes}</p>
                   )}
-                  {measurement.waist_cm && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Waist</p>
-                      <p className="font-semibold">{measurement.waist_cm} cm</p>
-                    </div>
-                  )}
-                  {measurement.hips_cm && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Hips</p>
-                      <p className="font-semibold">{measurement.hips_cm} cm</p>
-                    </div>
-                  )}
-                  {measurement.bicep_left_cm && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Bicep Left</p>
-                      <p className="font-semibold">{measurement.bicep_left_cm} cm</p>
-                    </div>
-                  )}
-                  {measurement.bicep_right_cm && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Bicep Right</p>
-                      <p className="font-semibold">{measurement.bicep_right_cm} cm</p>
-                    </div>
-                  )}
-                </div>
-                {measurement.notes && (
-                  <p className="mt-4 text-sm text-muted-foreground">{measurement.notes}</p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </Layout>
