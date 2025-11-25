@@ -88,10 +88,15 @@ serve(async (req) => {
         });
       }
 
-      // Add delay every 5 requests to avoid rate limiting
-      if ((i + 1) % 5 === 0 && i < days - 1) {
+      // Add delay after each request to avoid rate limiting
+      if (i < days - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Longer pause every 10 requests
+      if ((i + 1) % 10 === 0) {
         console.log(`Pausing after ${i + 1} requests...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
 
@@ -172,7 +177,9 @@ async function syncActivityData(supabaseClient: any, userId: string, accessToken
   );
 
   if (!activityResponse.ok) {
-    throw new Error('Failed to fetch activity data');
+    const errorText = await activityResponse.text();
+    console.error(`Fitbit API error for ${date}: ${activityResponse.status} - ${errorText}`);
+    throw new Error(`Failed to fetch activity data: ${activityResponse.status}`);
   }
 
   const activityData = await activityResponse.json();
