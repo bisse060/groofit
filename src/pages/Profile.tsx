@@ -31,12 +31,39 @@ export default function Profile() {
   });
   const [connectingFitbit, setConnectingFitbit] = useState(false);
   const [syncingHistorical, setSyncingHistorical] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       loadProfile();
     }
   }, [user]);
+
+  // Poll sync progress every 30 seconds if a sync is in progress
+  useEffect(() => {
+    if (!syncProgress || syncProgress.status !== 'in_progress') {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      const { data: progress } = await supabase
+        .from('fitbit_sync_progress')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (progress) {
+        setSyncProgress(progress);
+        
+        // Reload profile when sync completes
+        if (progress.status === 'completed') {
+          loadProfile();
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [syncProgress, user?.id]);
 
   const loadProfile = async () => {
     try {
@@ -60,6 +87,17 @@ export default function Profile() {
           fitbit_connected_at: data.fitbit_connected_at,
           fitbit_last_sync_at: data.fitbit_last_sync_at,
         });
+      }
+
+      // Load sync progress if user has Fitbit connected
+      if (data?.fitbit_user_id) {
+        const { data: progress } = await supabase
+          .from('fitbit_sync_progress')
+          .select('*')
+          .eq('user_id', user?.id)
+          .single();
+        
+        setSyncProgress(progress);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -277,17 +315,45 @@ export default function Profile() {
                 <div className="p-3 bg-muted rounded-lg space-y-2">
                   <p className="text-xs font-medium">📅 Historische gegevens importeren</p>
                   <p className="text-xs text-muted-foreground">
-                    Importeer automatisch al je Fitbit data van de afgelopen 365 dagen (stappen, calorieën, gewicht, vetpercentage én slaap).
+                    Importeer automatisch al je Fitbit data van de afgelopen 365 dagen. Data wordt gesynchroniseerd met max 30 dagen per uur om binnen API limieten te blijven.
                   </p>
+                  
+                  {syncProgress && syncProgress.status === 'in_progress' && (
+                    <div className="space-y-2 p-2 bg-background rounded border">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-medium">Voortgang:</span>
+                        <span>{syncProgress.days_synced} / {syncProgress.total_days} dagen</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(syncProgress.days_synced / syncProgress.total_days) * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Geschatte tijd: ~{Math.ceil((syncProgress.total_days - syncProgress.days_synced) / 30)} uur
+                      </p>
+                    </div>
+                  )}
+                  
+                  {syncProgress && syncProgress.status === 'completed' && (
+                    <div className="p-2 bg-green-500/10 text-green-700 dark:text-green-400 rounded text-xs">
+                      ✓ Import voltooid! Alle {syncProgress.total_days} dagen zijn gesynchroniseerd.
+                    </div>
+                  )}
+                  
                   <Button
                     onClick={handleSyncHistorical}
-                    disabled={syncingHistorical}
+                    disabled={syncingHistorical || (syncProgress?.status === 'in_progress')}
                     variant="secondary"
                     className="w-full"
                     size="sm"
                   >
                     <Activity className="h-4 w-4 mr-2" />
-                    {syncingHistorical ? 'Importeren...' : 'Importeer 365 dagen historie'}
+                    {syncingHistorical ? 'Opstarten...' : 
+                     syncProgress?.status === 'in_progress' ? 'Import bezig...' :
+                     syncProgress?.status === 'completed' ? 'Opnieuw importeren' :
+                     'Importeer 365 dagen historie'}
                   </Button>
                 </div>
                 <Button
