@@ -9,10 +9,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
+import { useTheme } from 'next-themes';
+import { Moon, Sun, Monitor } from 'lucide-react';
 
 export default function Profile() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
@@ -101,6 +104,53 @@ export default function Profile() {
           <h1 className="text-3xl font-bold">{t('profile.title')}</h1>
           <p className="text-muted-foreground">Manage your profile information</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t('theme.title')}</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    className="flex flex-col items-center gap-2 h-auto py-3"
+                    onClick={() => setTheme('light')}
+                  >
+                    <Sun className="h-5 w-5" />
+                    <span className="text-xs">{t('theme.light')}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    className="flex flex-col items-center gap-2 h-auto py-3"
+                    onClick={() => setTheme('dark')}
+                  >
+                    <Moon className="h-5 w-5" />
+                    <span className="text-xs">{t('theme.dark')}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={theme === 'system' ? 'default' : 'outline'}
+                    className="flex flex-col items-center gap-2 h-auto py-3"
+                    onClick={() => setTheme('system')}
+                  >
+                    <Monitor className="h-5 w-5" />
+                    <span className="text-xs">{t('theme.system')}</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {theme === 'system' 
+                    ? 'Volgt je toestel instellingen' 
+                    : `Momenteel in ${theme === 'dark' ? 'donker' : 'licht'} modus`}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
