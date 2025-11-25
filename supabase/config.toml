@@ -1,1 +1,10 @@
 project_id = "bizhoajrqpvnamixlfns"
+
+[functions.fitbit-auth-start]
+verify_jwt = true
+
+[functions.fitbit-auth-callback]
+verify_jwt = true
+
+[functions.fitbit-sync-daily]
+verify_jwt = true
