@@ -59,14 +59,25 @@ serve(async (req) => {
       const dateStr = date.toISOString().split('T')[0];
 
       try {
+        // Refresh token before each sync to ensure it's valid
+        const { data: currentProfile } = await supabaseClient
+          .from('profiles')
+          .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
+          .eq('id', user.id)
+          .single();
+
+        const currentAccessToken = await refreshTokenIfNeeded(supabaseClient, user.id, currentProfile);
+
         // Sync activity data
-        await syncActivityData(supabaseClient, user.id, accessToken, dateStr);
+        await syncActivityData(supabaseClient, user.id, currentAccessToken, dateStr);
         
         // Sync sleep data
-        await syncSleepData(supabaseClient, user.id, accessToken, dateStr);
+        await syncSleepData(supabaseClient, user.id, currentAccessToken, dateStr);
         
         results.successful++;
         results.details.push({ date: dateStr, success: true });
+        
+        console.log(`✓ Synced ${dateStr} successfully (${i + 1}/${days})`);
       } catch (error) {
         console.error(`Error syncing ${dateStr}:`, error);
         results.failed++;
@@ -77,9 +88,10 @@ serve(async (req) => {
         });
       }
 
-      // Add small delay to avoid rate limiting
-      if (i % 10 === 0 && i > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add delay every 5 requests to avoid rate limiting
+      if ((i + 1) % 5 === 0 && i < days - 1) {
+        console.log(`Pausing after ${i + 1} requests...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
