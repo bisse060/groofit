@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format, addDays, subDays } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface DailyLog {
   id: string;
@@ -23,6 +24,7 @@ interface DailyLog {
   weight: number | null;
   body_fat_percentage: number | null;
   notes: string | null;
+  tags: string[] | null;
 }
 
 export default function DailyLogs() {
@@ -40,6 +42,7 @@ export default function DailyLogs() {
     weight: '',
     body_fat_percentage: '',
     notes: '',
+    tags: [] as string[],
   });
 
   useEffect(() => {
@@ -81,6 +84,7 @@ export default function DailyLogs() {
         weight: log.weight?.toString() || '',
         body_fat_percentage: log.body_fat_percentage?.toString() || '',
         notes: log.notes || '',
+        tags: log.tags || [],
       });
     } else {
       setCurrentLog({
@@ -91,6 +95,7 @@ export default function DailyLogs() {
         weight: '',
         body_fat_percentage: '',
         notes: '',
+        tags: [],
       });
     }
   };
@@ -126,6 +131,7 @@ export default function DailyLogs() {
             ? parseFloat(currentLog.body_fat_percentage)
             : null,
           notes: currentLog.notes,
+          tags: currentLog.tags.length > 0 ? currentLog.tags : null,
         },
         { onConflict: 'user_id,log_date' }
       );
@@ -281,6 +287,44 @@ export default function DailyLogs() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md bg-background">
+                      {currentLog.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTags = currentLog.tags.filter((_, i) => i !== index);
+                              setCurrentLog({ ...currentLog, tags: newTags });
+                            }}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <Input
+                      id="tags"
+                      placeholder="Typ een tag en druk op Enter"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.currentTarget;
+                          const value = input.value.trim();
+                          if (value && !currentLog.tags.includes(value)) {
+                            setCurrentLog({ ...currentLog, tags: [...currentLog.tags, value] });
+                            input.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <Button type="submit" disabled={saving} className="w-full">
                   {saving ? t('common.loading') : t('common.save')}
                 </Button>
@@ -295,14 +339,24 @@ export default function DailyLogs() {
             <CardContent>
               <div className="space-y-2">
                 {logs.slice(0, 10).map((log) => (
-                  <Button
-                    key={log.id}
-                    variant={log.log_date === selectedDate ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setSelectedDate(log.log_date)}
-                  >
-                    {format(new Date(log.log_date), 'MMM dd, yyyy')}
-                  </Button>
+                  <div key={log.id} className="space-y-1">
+                    <Button
+                      variant={log.log_date === selectedDate ? 'default' : 'ghost'}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedDate(log.log_date)}
+                    >
+                      {format(new Date(log.log_date), 'MMM dd, yyyy')}
+                    </Button>
+                    {log.tags && log.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 px-2">
+                        {log.tags.map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </CardContent>

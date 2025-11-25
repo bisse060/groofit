@@ -25,6 +25,7 @@ export type Database = {
           notes: string | null
           steps: number | null
           synced_from_fitbit: boolean | null
+          tags: string[] | null
           updated_at: string | null
           user_id: string
           weight: number | null
@@ -40,6 +41,7 @@ export type Database = {
           notes?: string | null
           steps?: number | null
           synced_from_fitbit?: boolean | null
+          tags?: string[] | null
           updated_at?: string | null
           user_id: string
           weight?: number | null
@@ -55,6 +57,7 @@ export type Database = {
           notes?: string | null
           steps?: number | null
           synced_from_fitbit?: boolean | null
+          tags?: string[] | null
           updated_at?: string | null
           user_id?: string
           weight?: number | null
