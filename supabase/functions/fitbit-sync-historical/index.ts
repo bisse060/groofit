@@ -31,86 +31,22 @@ serve(async (req) => {
     const { days = 365 } = await req.json();
 
     console.log(`Starting historical sync for ${days} days for user ${user.id}`);
-
-    // Get profile with Fitbit tokens
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('fitbit_user_id, fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile || !profile.fitbit_user_id) {
-      throw new Error('Fitbit not connected');
+    
+    // Start background sync and return immediately
+    const syncPromise = performHistoricalSync(supabaseClient, user.id, days);
+    
+    // Use waitUntil to keep function running for background task
+    // @ts-ignore - EdgeRuntime is available in Supabase Edge Functions
+    if (typeof EdgeRuntime !== 'undefined') {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(syncPromise);
     }
 
-    // Refresh token if needed
-    const accessToken = await refreshTokenIfNeeded(supabaseClient, user.id, profile);
-
-    const results = {
-      successful: 0,
-      failed: 0,
-      details: [] as any[]
-    };
-
-    // Sync data for each day
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      try {
-        // Refresh token before each sync to ensure it's valid
-        const { data: currentProfile } = await supabaseClient
-          .from('profiles')
-          .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-          .eq('id', user.id)
-          .single();
-
-        const currentAccessToken = await refreshTokenIfNeeded(supabaseClient, user.id, currentProfile);
-
-        // Sync activity data
-        await syncActivityData(supabaseClient, user.id, currentAccessToken, dateStr);
-        
-        // Sync sleep data
-        await syncSleepData(supabaseClient, user.id, currentAccessToken, dateStr);
-        
-        results.successful++;
-        results.details.push({ date: dateStr, success: true });
-        
-        console.log(`✓ Synced ${dateStr} successfully (${i + 1}/${days})`);
-      } catch (error) {
-        console.error(`Error syncing ${dateStr}:`, error);
-        results.failed++;
-        results.details.push({ 
-          date: dateStr, 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-
-      // Add delay after each request to avoid rate limiting
-      if (i < days - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      // Longer pause every 10 requests
-      if ((i + 1) % 10 === 0) {
-        console.log(`Pausing after ${i + 1} requests...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
-    }
-
-    // Update last sync time
-    await supabaseClient
-      .from('profiles')
-      .update({ fitbit_last_sync_at: new Date().toISOString() })
-      .eq('id', user.id);
-
+    // Return immediately to user
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synced ${results.successful} days successfully, ${results.failed} failed`,
-        results
+        message: `Historical sync started for ${days} days. This will run in the background and may take some time.`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -122,6 +58,102 @@ serve(async (req) => {
     );
   }
 });
+
+async function performHistoricalSync(supabaseClient: any, userId: string, totalDays: number) {
+  const BATCH_SIZE = 30; // Process 30 days at a time to avoid rate limits
+  const DELAY_BETWEEN_BATCHES = 10000; // 10 seconds between batches
+  
+  try {
+
+    // Get profile with Fitbit tokens
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('fitbit_user_id, fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile || !profile.fitbit_user_id) {
+      console.error('Fitbit not connected for user', userId);
+      return;
+    }
+
+    console.log(`Processing ${totalDays} days in batches of ${BATCH_SIZE}`);
+    
+    let totalSuccessful = 0;
+    let totalFailed = 0;
+    
+    // Process in batches
+    for (let batchStart = 0; batchStart < totalDays; batchStart += BATCH_SIZE) {
+      const batchEnd = Math.min(batchStart + BATCH_SIZE, totalDays);
+      const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(totalDays / BATCH_SIZE);
+      
+      console.log(`Starting batch ${batchNum}/${totalBatches} (days ${batchStart}-${batchEnd-1})`);
+      
+      // Get fresh token for this batch
+      const { data: currentProfile } = await supabaseClient
+        .from('profiles')
+        .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
+        .eq('id', userId)
+        .single();
+      
+      let accessToken = await refreshTokenIfNeeded(supabaseClient, userId, currentProfile);
+      
+      // Sync each day in this batch
+      for (let i = batchStart; i < batchEnd; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        try {
+          // Refresh token every 10 requests within batch
+          if ((i - batchStart) % 10 === 0 && i !== batchStart) {
+            const { data: refreshProfile } = await supabaseClient
+              .from('profiles')
+              .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
+              .eq('id', userId)
+              .single();
+            accessToken = await refreshTokenIfNeeded(supabaseClient, userId, refreshProfile);
+          }
+
+          // Sync activity data
+          await syncActivityData(supabaseClient, userId, accessToken, dateStr);
+          
+          // Small delay between endpoints
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Sync sleep data
+          await syncSleepData(supabaseClient, userId, accessToken, dateStr);
+          
+          totalSuccessful++;
+          console.log(`✓ Synced ${dateStr} (${i + 1}/${totalDays})`);
+          
+          // Small delay between days
+          await new Promise(resolve => setTimeout(resolve, 600));
+        } catch (error) {
+          console.error(`✗ Error syncing ${dateStr}:`, error);
+          totalFailed++;
+        }
+      }
+      
+      // Longer delay between batches (except for last batch)
+      if (batchEnd < totalDays) {
+        console.log(`Batch ${batchNum} complete. Waiting ${DELAY_BETWEEN_BATCHES/1000}s before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+      }
+    }
+
+    // Update last sync time
+    await supabaseClient
+      .from('profiles')
+      .update({ fitbit_last_sync_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    console.log(`Historical sync complete: ${totalSuccessful} successful, ${totalFailed} failed`);
+  } catch (error) {
+    console.error('Fatal error in performHistoricalSync:', error);
+  }
+}
 
 async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile: any) {
   const expiresAt = new Date(profile.fitbit_token_expires_at);
