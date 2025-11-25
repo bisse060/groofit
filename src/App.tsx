@@ -13,6 +13,8 @@ import DailyLogs from "./pages/DailyLogs";
 import Measurements from "./pages/Measurements";
 import Comparisons from "./pages/Comparisons";
 import Sleep from "./pages/Sleep";
+import Workouts from "./pages/Workouts";
+import WorkoutDetail from "./pages/WorkoutDetail";
 import Admin from "./pages/Admin";
 import FitbitCallback from "./pages/FitbitCallback";
 import NotFound from "./pages/NotFound";
@@ -37,6 +39,8 @@ const App = () => (
                 <Route path="/measurements" element={<Measurements />} />
                 <Route path="/comparisons" element={<Comparisons />} />
                 <Route path="/sleep" element={<Sleep />} />
+                <Route path="/workouts" element={<Workouts />} />
+                <Route path="/workouts/:id" element={<WorkoutDetail />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/fitbit/callback" element={<FitbitCallback />} />
                 <Route path="*" element={<NotFound />} />

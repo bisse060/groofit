@@ -14,6 +14,7 @@ import {
   Shield,
   LogOut,
   Moon,
+  Dumbbell,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -30,7 +31,8 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/daily-logs', icon: FileText, label: t('nav.dailyLogs') },
     { path: '/measurements', icon: Ruler, label: t('nav.measurements') },
-    { path: '/sleep', icon: Moon, label: 'Slaap' },
+    { path: '/sleep', icon: Moon, label: t('nav.sleep') },
+    { path: '/workouts', icon: Dumbbell, label: t('nav.workouts') },
     { path: '/comparisons', icon: GitCompare, label: t('nav.comparisons') },
   ];
 
