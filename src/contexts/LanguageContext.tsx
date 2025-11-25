@@ -19,6 +19,7 @@ export const translations: Translations = {
   'nav.photos': { nl: "Foto's", en: 'Photos' },
   'nav.sleep': { nl: 'Slaap', en: 'Sleep' },
   'nav.workouts': { nl: 'Workouts', en: 'Workouts' },
+  'nav.exercises': { nl: 'Oefeningen', en: 'Exercises' },
   'nav.progressPhotos': { nl: "Progressfoto's", en: 'Progress Photos' },
   'nav.admin': { nl: 'Admin', en: 'Admin' },
   'nav.logout': { nl: 'Uitloggen', en: 'Logout' },
