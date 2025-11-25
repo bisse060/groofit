@@ -121,7 +121,7 @@ export default function DailyLogs() {
   const handleSyncFitbit = async () => {
     setSyncing(true);
     try {
-      // Sync activity data (steps, calories, weight)
+      // Sync activity data (steps, calories, weight, body fat)
       const { data: activityData, error: activityError } = await supabase.functions.invoke('fitbit-sync-daily', {
         body: { date: selectedDate },
       });
@@ -143,6 +143,10 @@ export default function DailyLogs() {
         if (activityData.weight) {
           message += `, gewicht: ${activityData.weight} kg`;
         }
+
+        if (activityData.body_fat_percentage) {
+          message += `, vet: ${activityData.body_fat_percentage}%`;
+        }
         
         if (sleepData?.success && !sleepData.noData) {
           message += `, slaap: ${sleepData.duration_minutes} minuten`;
@@ -155,6 +159,7 @@ export default function DailyLogs() {
           steps: activityData.steps.toString(),
           calorie_burn: activityData.calories_out.toString(),
           weight: activityData.weight ? activityData.weight.toString() : currentLog.weight,
+          body_fat_percentage: activityData.body_fat_percentage ? activityData.body_fat_percentage.toString() : currentLog.body_fat_percentage,
         });
         loadLogs();
       }

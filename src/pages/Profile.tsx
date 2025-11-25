@@ -30,6 +30,7 @@ export default function Profile() {
     fitbit_last_sync_at: null as string | null,
   });
   const [connectingFitbit, setConnectingFitbit] = useState(false);
+  const [syncingHistorical, setSyncingHistorical] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -145,6 +146,28 @@ export default function Profile() {
     }
   };
 
+  const handleSyncHistorical = async () => {
+    setSyncingHistorical(true);
+    try {
+      toast.info('Historische sync gestart... Dit kan enkele minuten duren.');
+      
+      const { data, error } = await supabase.functions.invoke('fitbit-sync-historical', {
+        body: { days: 365 },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(`Sync voltooid! ${data.results.successful} dagen succesvol gesynchroniseerd.`);
+        loadProfile();
+      }
+    } catch (error: any) {
+      toast.error('Fout bij historische sync: ' + error.message);
+    } finally {
+      setSyncingHistorical(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -254,6 +277,22 @@ export default function Profile() {
                       Laatst gesynchroniseerd: {new Date(profile.fitbit_last_sync_at).toLocaleString('nl-NL')}
                     </p>
                   )}
+                </div>
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-xs font-medium">📅 Historische gegevens importeren</p>
+                  <p className="text-xs text-muted-foreground">
+                    Importeer automatisch al je Fitbit data van de afgelopen 365 dagen (stappen, calorieën, gewicht, vetpercentage én slaap).
+                  </p>
+                  <Button
+                    onClick={handleSyncHistorical}
+                    disabled={syncingHistorical}
+                    variant="secondary"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    {syncingHistorical ? 'Importeren...' : 'Importeer 365 dagen historie'}
+                  </Button>
                 </div>
                 <Button
                   variant="outline"
