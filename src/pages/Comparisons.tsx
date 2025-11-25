@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import TimelineView from '@/components/comparisons/TimelineView';
 
 interface Measurement {
   id: string;
@@ -37,6 +39,7 @@ export default function Comparisons() {
   const [secondMeasurement, setSecondMeasurement] = useState<string>('');
   const [firstPhotos, setFirstPhotos] = useState<ProgressPhoto[]>([]);
   const [secondPhotos, setSecondPhotos] = useState<ProgressPhoto[]>([]);
+  const [timelinePhotos, setTimelinePhotos] = useState<Record<string, ProgressPhoto[]>>({});
 
   useEffect(() => {
     if (user) {
@@ -80,6 +83,36 @@ export default function Comparisons() {
       loadPhotos(secondMeasurement, setSecondPhotos);
     }
   }, [secondMeasurement]);
+
+  useEffect(() => {
+    if (measurements.length > 0) {
+      loadTimelinePhotos();
+    }
+  }, [measurements]);
+
+  const loadTimelinePhotos = async () => {
+    try {
+      const measurementIds = measurements.slice(0, 8).map(m => m.id);
+      const { data, error } = await supabase
+        .from('progress_photos')
+        .select('*')
+        .in('measurement_id', measurementIds);
+
+      if (error) throw error;
+
+      const photosMap: Record<string, ProgressPhoto[]> = {};
+      data?.forEach(photo => {
+        if (!photosMap[photo.measurement_id]) {
+          photosMap[photo.measurement_id] = [];
+        }
+        photosMap[photo.measurement_id].push(photo);
+      });
+
+      setTimelinePhotos(photosMap);
+    } catch (error: any) {
+      console.error('Error loading timeline photos:', error);
+    }
+  };
 
   const loadPhotos = async (measurementId: string, setPhotos: (photos: ProgressPhoto[]) => void) => {
     try {
@@ -141,13 +174,20 @@ export default function Comparisons() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold">{t('comparisons.title')}</h1>
           <p className="text-muted-foreground">Compare two measurements to track your progress</p>
         </div>
 
-        <Card>
+        <Tabs defaultValue="comparison" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="comparison">Laatste 2 Metingen</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="comparison" className="space-y-6">
+            <Card>
           <CardHeader>
             <CardTitle>Select Measurements</CardTitle>
           </CardHeader>
@@ -309,6 +349,25 @@ export default function Comparisons() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="timeline" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Metingen Timeline</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Overzicht van je laatste {Math.min(8, measurements.length)} metingen
+                </p>
+              </CardHeader>
+              <CardContent>
+                <TimelineView 
+                  measurements={measurements.slice(0, 8)} 
+                  photosMap={timelinePhotos}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

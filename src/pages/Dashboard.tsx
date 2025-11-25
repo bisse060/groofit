@@ -6,6 +6,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Activity, TrendingUp, Target, Calendar, Camera } from 'lucide-react';
 import Layout from '@/components/Layout';
+import WeightTrendChart from '@/components/charts/WeightTrendChart';
+import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
+import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -128,6 +131,13 @@ export default function Dashboard() {
             );
           })}
         </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <WeightTrendChart />
+          <ProgressIndicator />
+        </div>
+
+        <CrossDayHighlights />
 
         <Card>
           <CardHeader>
