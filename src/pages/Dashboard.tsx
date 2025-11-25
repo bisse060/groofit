@@ -151,11 +151,11 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Link>
-              <Link to="/progress-photos">
+              <Link to="/measurements">
                 <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
                   <CardContent className="pt-6 text-center">
                     <Camera className="h-8 w-8 mx-auto mb-2 text-success" />
-                    <p className="font-semibold">Upload Progress Photo</p>
+                    <p className="font-semibold">Add Measurement with Photos</p>
                   </CardContent>
                 </Card>
               </Link>
