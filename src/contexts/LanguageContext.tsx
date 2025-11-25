@@ -74,6 +74,12 @@ export const translations: Translations = {
   'common.delete': { nl: 'Verwijderen', en: 'Delete' },
   'common.edit': { nl: 'Bewerken', en: 'Edit' },
   'common.loading': { nl: 'Laden...', en: 'Loading...' },
+  
+  // Theme
+  'theme.title': { nl: 'Thema', en: 'Theme' },
+  'theme.light': { nl: 'Licht', en: 'Light' },
+  'theme.dark': { nl: 'Donker', en: 'Dark' },
+  'theme.system': { nl: 'Systeeminstellingen', en: 'System' },
 };
 
 interface LanguageContextType {
