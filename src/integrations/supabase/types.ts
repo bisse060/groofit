@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_progress_reports: {
+        Row: {
+          created_at: string
+          id: string
+          input_type: string | null
+          measurement_ids: string[]
+          report_text: string
+          summary_title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_type?: string | null
+          measurement_ids: string[]
+          report_text: string
+          summary_title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_type?: string | null
+          measurement_ids?: string[]
+          report_text?: string
+          summary_title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_logs: {
         Row: {
           body_fat_percentage: number | null
@@ -65,6 +98,33 @@ export type Database = {
         }
         Relationships: []
       }
+      fitbit_sync_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          status: string
+          sync_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          status: string
+          sync_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          sync_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       measurements: {
         Row: {
           bicep_left_cm: number | null
@@ -110,13 +170,41 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_states: {
+        Row: {
+          created_at: string | null
+          id: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          provider?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
           current_weight: number | null
           fitbit_access_token: string | null
+          fitbit_connected_at: string | null
+          fitbit_last_sync_at: string | null
           fitbit_refresh_token: string | null
+          fitbit_scope: string | null
+          fitbit_token_expires_at: string | null
           fitbit_user_id: string | null
           full_name: string
           goals: string | null
@@ -131,7 +219,11 @@ export type Database = {
           created_at?: string | null
           current_weight?: number | null
           fitbit_access_token?: string | null
+          fitbit_connected_at?: string | null
+          fitbit_last_sync_at?: string | null
           fitbit_refresh_token?: string | null
+          fitbit_scope?: string | null
+          fitbit_token_expires_at?: string | null
           fitbit_user_id?: string | null
           full_name: string
           goals?: string | null
@@ -146,7 +238,11 @@ export type Database = {
           created_at?: string | null
           current_weight?: number | null
           fitbit_access_token?: string | null
+          fitbit_connected_at?: string | null
+          fitbit_last_sync_at?: string | null
           fitbit_refresh_token?: string | null
+          fitbit_scope?: string | null
+          fitbit_token_expires_at?: string | null
           fitbit_user_id?: string | null
           full_name?: string
           goals?: string | null
