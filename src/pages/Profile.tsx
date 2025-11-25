@@ -149,18 +149,14 @@ export default function Profile() {
   const handleSyncHistorical = async () => {
     setSyncingHistorical(true);
     try {
-      toast.info('Historische sync gestart... Dit kan enkele minuten duren.');
-      
       const { data, error } = await supabase.functions.invoke('fitbit-sync-historical', {
         body: { days: 365 },
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        toast.success(`Sync voltooid! ${data.results.successful} dagen succesvol gesynchroniseerd.`);
-        loadProfile();
-      }
+      toast.success('Historische sync gestart! Dit draait in de achtergrond en kan 20-30 minuten duren. Je kunt de app gewoon blijven gebruiken.');
+      loadProfile();
     } catch (error: any) {
       toast.error('Fout bij historische sync: ' + error.message);
     } finally {
