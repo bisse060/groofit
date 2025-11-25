@@ -295,6 +295,57 @@ export type Database = {
           },
         ]
       }
+      sleep_logs: {
+        Row: {
+          created_at: string | null
+          date: string
+          deep_minutes: number | null
+          duration_minutes: number | null
+          efficiency: number | null
+          end_time: string | null
+          id: string
+          light_minutes: number | null
+          raw: Json | null
+          rem_minutes: number | null
+          score: number | null
+          start_time: string | null
+          user_id: string
+          wake_minutes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          deep_minutes?: number | null
+          duration_minutes?: number | null
+          efficiency?: number | null
+          end_time?: string | null
+          id?: string
+          light_minutes?: number | null
+          raw?: Json | null
+          rem_minutes?: number | null
+          score?: number | null
+          start_time?: string | null
+          user_id: string
+          wake_minutes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          deep_minutes?: number | null
+          duration_minutes?: number | null
+          efficiency?: number | null
+          end_time?: string | null
+          id?: string
+          light_minutes?: number | null
+          raw?: Json | null
+          rem_minutes?: number | null
+          score?: number | null
+          start_time?: string | null
+          user_id?: string
+          wake_minutes?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

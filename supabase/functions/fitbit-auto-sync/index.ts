@@ -44,6 +44,10 @@ serve(async (req) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
     const results = [];
 
     // Sync each user
@@ -51,11 +55,16 @@ serve(async (req) => {
       try {
         console.log(`Syncing user ${profile.full_name} (${profile.id})...`);
         
+        // Sync activity data
         const syncData = await syncUserData(
           supabaseAdmin,
           profile.id,
           today
         );
+
+        // Sync sleep data for yesterday and today
+        await syncSleepData(supabaseAdmin, profile.id, yesterdayStr);
+        await syncSleepData(supabaseAdmin, profile.id, today);
 
         console.log(`Sync successful for user ${profile.id}`);
         results.push({
@@ -234,4 +243,63 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
     .eq('id', userId);
 
   return tokenData.access_token;
+}
+
+async function syncSleepData(supabaseClient: any, userId: string, date: string) {
+  try {
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.fitbit_access_token) {
+      return;
+    }
+
+    const accessToken = await refreshTokenIfNeeded(supabaseClient, userId, profile);
+
+    const fitbitUrl = `https://api.fitbit.com/1.2/user/-/sleep/date/${date}.json`;
+    const fitbitResponse = await fetch(fitbitUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!fitbitResponse.ok) {
+      console.error('Fitbit sleep API error for user', userId);
+      return;
+    }
+
+    const data = await fitbitResponse.json();
+    const mainLog = data.sleep?.[0];
+    
+    if (!mainLog) {
+      console.log(`No sleep data for user ${userId} on ${date}`);
+      return;
+    }
+
+    const sleepData = {
+      user_id: userId,
+      date,
+      duration_minutes: Math.floor(mainLog.duration / 60000),
+      efficiency: mainLog.efficiency || null,
+      score: mainLog.efficiency || null,
+      deep_minutes: mainLog.levels?.summary?.deep?.minutes || 0,
+      rem_minutes: mainLog.levels?.summary?.rem?.minutes || 0,
+      light_minutes: mainLog.levels?.summary?.light?.minutes || 0,
+      wake_minutes: mainLog.levels?.summary?.wake?.minutes || 0,
+      start_time: mainLog.startTime,
+      end_time: mainLog.endTime,
+      raw: data,
+    };
+
+    await supabaseClient
+      .from('sleep_logs')
+      .upsert(sleepData, { onConflict: 'user_id,date' });
+
+    console.log(`Sleep data synced for user ${userId} on ${date}`);
+  } catch (error) {
+    console.error(`Error syncing sleep for user ${userId}:`, error);
+  }
 }

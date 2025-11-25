@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.fitbit-sync-daily]
 verify_jwt = true
 
+[functions.fitbit-sync-sleep]
+verify_jwt = true
+
 [functions.fitbit-auto-sync]
 verify_jwt = false
 
