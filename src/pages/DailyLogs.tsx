@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format, addDays, subDays } from 'date-fns';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface DailyLog {
@@ -32,6 +32,8 @@ export default function DailyLogs() {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [fitbitConnected, setFitbitConnected] = useState(false);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [currentLog, setCurrentLog] = useState({
@@ -48,6 +50,7 @@ export default function DailyLogs() {
   useEffect(() => {
     if (user) {
       loadLogs();
+      checkFitbitConnection();
     }
   }, [user]);
 
@@ -97,6 +100,46 @@ export default function DailyLogs() {
         notes: '',
         tags: [],
       });
+    }
+  };
+
+  const checkFitbitConnection = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('fitbit_user_id')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+      setFitbitConnected(!!data?.fitbit_user_id);
+    } catch (error: any) {
+      console.error('Error checking Fitbit connection:', error);
+    }
+  };
+
+  const handleSyncFitbit = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fitbit-sync-daily', {
+        body: { date: selectedDate },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(`Fitbit data gesynchroniseerd: ${data.steps} stappen, ${data.calories_out} calorieën`);
+        setCurrentLog({
+          ...currentLog,
+          steps: data.steps.toString(),
+          calorie_burn: data.calories_out.toString(),
+        });
+        loadLogs();
+      }
+    } catch (error: any) {
+      toast.error('Fout bij synchroniseren: ' + error.message);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -160,9 +203,22 @@ export default function DailyLogs() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{t('logs.title')}</h1>
-          <p className="text-muted-foreground">Track your daily fitness activities</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{t('logs.title')}</h1>
+            <p className="text-muted-foreground">Track your daily fitness activities</p>
+          </div>
+          {fitbitConnected && (
+            <Button
+              onClick={handleSyncFitbit}
+              disabled={syncing}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Synchroniseren...' : 'Sync met Fitbit'}
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
