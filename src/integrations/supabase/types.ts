@@ -125,6 +125,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fitbit_sync_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_day_offset: number | null
+          days_synced: number | null
+          error_message: string | null
+          id: string
+          last_sync_at: string | null
+          started_at: string | null
+          status: string | null
+          total_days: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day_offset?: number | null
+          days_synced?: number | null
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_days: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day_offset?: number | null
+          days_synced?: number | null
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_days?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       measurements: {
         Row: {
           bicep_left_cm: number | null
