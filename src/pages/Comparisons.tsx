@@ -54,6 +54,14 @@ export default function Comparisons() {
 
       if (error) throw error;
       setMeasurements(data || []);
+      
+      // Automatically select the two most recent measurements
+      if (data && data.length >= 2) {
+        setSecondMeasurement(data[0].id); // Most recent
+        setFirstMeasurement(data[1].id);  // Second most recent
+      } else if (data && data.length === 1) {
+        setFirstMeasurement(data[0].id);
+      }
     } catch (error: any) {
       toast.error(error.message);
     } finally {
