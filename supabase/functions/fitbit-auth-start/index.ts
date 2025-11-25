@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('fitbit-auth-start: Request received');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -25,15 +27,20 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error('Unauthorized');
     }
 
     const { redirectUrl } = await req.json();
+    console.log('Redirect URL received:', redirectUrl);
     
     const clientId = Deno.env.get('FITBIT_CLIENT_ID');
     if (!clientId) {
+      console.error('FITBIT_CLIENT_ID not configured');
       throw new Error('FITBIT_CLIENT_ID not configured');
     }
+    
+    console.log('Using Client ID:', clientId.substring(0, 8) + '...');
 
     // Generate state token
     const state = crypto.randomUUID();
@@ -55,6 +62,8 @@ serve(async (req) => {
     // Build Fitbit OAuth URL
     const scope = 'activity nutrition profile settings weight heartrate sleep';
     const authUrl = `https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+    
+    console.log('Generated auth URL (state hidden):', authUrl.replace(state, 'STATE_HIDDEN'));
 
     return new Response(
       JSON.stringify({ authUrl }),
