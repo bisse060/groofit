@@ -110,6 +110,31 @@ serve(async (req) => {
     const steps = activityData.summary?.steps || 0;
     const caloriesOut = activityData.summary?.caloriesOut || 0;
 
+    // Fetch weight data from Fitbit
+    let weight = null;
+    try {
+      const weightResponse = await fetch(
+        `https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (weightResponse.ok) {
+        const weightData = await weightResponse.json();
+        // Get the most recent weight log for this date
+        if (weightData.weight && weightData.weight.length > 0) {
+          weight = weightData.weight[0].weight;
+          console.log(`Found weight data: ${weight} kg`);
+        }
+      }
+    } catch (weightError) {
+      console.error('Error fetching weight data:', weightError);
+      // Continue even if weight fetch fails
+    }
+
     // Upsert daily log
     const { error: upsertError } = await supabaseClient
       .from('daily_logs')
@@ -118,6 +143,7 @@ serve(async (req) => {
         log_date: date,
         steps: steps,
         calorie_burn: caloriesOut,
+        weight: weight,
         synced_from_fitbit: true,
       }, {
         onConflict: 'user_id,log_date',
@@ -141,7 +167,7 @@ serve(async (req) => {
         user_id: user.id,
         sync_date: date,
         status: 'success',
-        message: `Synced ${steps} steps and ${caloriesOut} calories`,
+        message: `Synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}`,
       });
 
     return new Response(
@@ -150,6 +176,7 @@ serve(async (req) => {
         date: date,
         steps: steps,
         calories_out: caloriesOut,
+        weight: weight,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
