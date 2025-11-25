@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Activity, TrendingUp, Target, Calendar, Camera } from 'lucide-react';
+import { Activity, TrendingUp, Target, Calendar, Camera, Dumbbell } from 'lucide-react';
 import Layout from '@/components/Layout';
 import WeightTrendChart from '@/components/charts/WeightTrendChart';
 import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
 import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
 import SleepSummaryCard from '@/components/dashboard/SleepSummaryCard';
 import SleepAnalysis from '@/components/dashboard/SleepAnalysis';
+import LastWorkoutCard from '@/components/dashboard/LastWorkoutCard';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -140,6 +141,8 @@ export default function Dashboard() {
           <SleepSummaryCard />
         </div>
 
+        <LastWorkoutCard />
+
         <SleepAnalysis />
 
         <CrossDayHighlights />
@@ -171,6 +174,14 @@ export default function Dashboard() {
                   <CardContent className="pt-6 text-center">
                     <Camera className="h-8 w-8 mx-auto mb-2 text-success" />
                     <p className="font-semibold">Add Measurement with Photos</p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/workouts">
+                <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
+                  <CardContent className="pt-6 text-center">
+                    <Dumbbell className="h-8 w-8 mx-auto mb-2 text-accent" />
+                    <p className="font-semibold">Start Workout</p>
                   </CardContent>
                 </Card>
               </Link>
