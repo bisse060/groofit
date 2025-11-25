@@ -10,6 +10,7 @@ import WeightTrendChart from '@/components/charts/WeightTrendChart';
 import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
 import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
 import SleepSummaryCard from '@/components/dashboard/SleepSummaryCard';
+import SleepAnalysis from '@/components/dashboard/SleepAnalysis';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -138,6 +139,8 @@ export default function Dashboard() {
           <ProgressIndicator />
           <SleepSummaryCard />
         </div>
+
+        <SleepAnalysis />
 
         <CrossDayHighlights />
 
