@@ -147,6 +147,29 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
     const steps = activityData.summary?.steps || 0;
     const caloriesOut = activityData.summary?.caloriesOut || 0;
 
+    // Fetch weight data from Fitbit
+    let weight = null;
+    try {
+      const weightResponse = await fetch(
+        `https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (weightResponse.ok) {
+        const weightData = await weightResponse.json();
+        if (weightData.weight && weightData.weight.length > 0) {
+          weight = weightData.weight[0].weight;
+          console.log(`Found weight data for user ${userId}: ${weight} kg`);
+        }
+      }
+    } catch (weightError) {
+      console.error('Error fetching weight data:', weightError);
+    }
+
     // Upsert daily log
     const { error: upsertError } = await supabaseClient
       .from('daily_logs')
@@ -155,6 +178,7 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
         log_date: date,
         steps: steps,
         calorie_burn: caloriesOut,
+        weight: weight,
         synced_from_fitbit: true,
       }, {
         onConflict: 'user_id,log_date',
@@ -177,12 +201,13 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
         user_id: userId,
         sync_date: date,
         status: 'success',
-        message: `Auto-synced ${steps} steps and ${caloriesOut} calories`,
+        message: `Auto-synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}`,
       });
 
     return {
       steps,
       calories_out: caloriesOut,
+      weight: weight,
       date
     };
   } catch (error) {
