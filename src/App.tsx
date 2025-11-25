@@ -13,6 +13,7 @@ import DailyLogs from "./pages/DailyLogs";
 import Measurements from "./pages/Measurements";
 import Comparisons from "./pages/Comparisons";
 import Admin from "./pages/Admin";
+import FitbitCallback from "./pages/FitbitCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/measurements" element={<Measurements />} />
                 <Route path="/comparisons" element={<Comparisons />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/fitbit/callback" element={<FitbitCallback />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>

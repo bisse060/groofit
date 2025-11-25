@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink } from 'lucide-react';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -25,7 +25,11 @@ export default function Profile() {
     height_cm: '',
     goals: '',
     instagram_username: '',
+    fitbit_user_id: null as string | null,
+    fitbit_connected_at: null as string | null,
+    fitbit_last_sync_at: null as string | null,
   });
+  const [connectingFitbit, setConnectingFitbit] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -51,6 +55,9 @@ export default function Profile() {
           height_cm: data.height_cm?.toString() || '',
           goals: data.goals || '',
           instagram_username: data.instagram_username || '',
+          fitbit_user_id: data.fitbit_user_id,
+          fitbit_connected_at: data.fitbit_connected_at,
+          fitbit_last_sync_at: data.fitbit_last_sync_at,
         });
       }
     } catch (error: any) {
@@ -84,6 +91,49 @@ export default function Profile() {
       toast.error(error.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleConnectFitbit = async () => {
+    setConnectingFitbit(true);
+    try {
+      const redirectUrl = `${window.location.origin}/fitbit/callback`;
+      const { data, error } = await supabase.functions.invoke('fitbit-auth-start', {
+        body: { redirectUrl },
+      });
+
+      if (error) throw error;
+
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      }
+    } catch (error: any) {
+      toast.error('Fout bij verbinden met Fitbit: ' + error.message);
+      setConnectingFitbit(false);
+    }
+  };
+
+  const handleDisconnectFitbit = async () => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          fitbit_user_id: null,
+          fitbit_access_token: null,
+          fitbit_refresh_token: null,
+          fitbit_token_expires_at: null,
+          fitbit_scope: null,
+          fitbit_connected_at: null,
+          fitbit_last_sync_at: null,
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      toast.success('Fitbit verbinding verbroken');
+      loadProfile();
+    } catch (error: any) {
+      toast.error('Fout bij verbreken verbinding: ' + error.message);
     }
   };
 
@@ -149,6 +199,55 @@ export default function Profile() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Fitbit Integratie
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!profile.fitbit_user_id ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Verbind je Fitbit-account om stappen en verbranding automatisch in te laden.
+                </p>
+                <Button 
+                  onClick={handleConnectFitbit} 
+                  disabled={connectingFitbit}
+                  className="w-full"
+                >
+                  {connectingFitbit ? 'Verbinden...' : 'Verbind Fitbit'}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">✓ Fitbit verbonden</p>
+                  {profile.fitbit_connected_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Sinds: {new Date(profile.fitbit_connected_at).toLocaleDateString('nl-NL')}
+                    </p>
+                  )}
+                  {profile.fitbit_last_sync_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Laatst gesynchroniseerd: {new Date(profile.fitbit_last_sync_at).toLocaleString('nl-NL')}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleDisconnectFitbit}
+                  className="w-full"
+                >
+                  <Unlink className="h-4 w-4 mr-2" />
+                  Verbinding verbreken
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
