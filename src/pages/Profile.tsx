@@ -98,16 +98,24 @@ export default function Profile() {
     setConnectingFitbit(true);
     try {
       const redirectUrl = `${window.location.origin}/fitbit/callback`;
+      console.log('Calling fitbit-auth-start with redirectUrl:', redirectUrl);
+      
       const { data, error } = await supabase.functions.invoke('fitbit-auth-start', {
         body: { redirectUrl },
       });
 
+      console.log('Response:', { data, error });
+
       if (error) throw error;
 
       if (data.authUrl) {
+        console.log('Redirecting to Fitbit...');
         window.location.href = data.authUrl;
+      } else {
+        throw new Error('No authUrl received from server');
       }
     } catch (error: any) {
+      console.error('Fitbit connect error:', error);
       toast.error('Fout bij verbinden met Fitbit: ' + error.message);
       setConnectingFitbit(false);
     }
@@ -215,6 +223,15 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground">
                   Verbind je Fitbit-account om stappen en verbranding automatisch in te laden.
                 </p>
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-xs font-medium">📋 Callback URL voor Fitbit:</p>
+                  <code className="text-xs break-all block bg-background p-2 rounded border">
+                    {window.location.origin}/fitbit/callback
+                  </code>
+                  <p className="text-xs text-muted-foreground">
+                    Voeg deze URL toe als "OAuth 2.0 Redirect URL" in je Fitbit Developer Dashboard
+                  </p>
+                </div>
                 <Button 
                   onClick={handleConnectFitbit} 
                   disabled={connectingFitbit}
