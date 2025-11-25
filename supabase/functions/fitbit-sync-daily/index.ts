@@ -110,8 +110,9 @@ serve(async (req) => {
     const steps = activityData.summary?.steps || 0;
     const caloriesOut = activityData.summary?.caloriesOut || 0;
 
-    // Fetch weight data from Fitbit
+    // Fetch weight and body fat data from Fitbit
     let weight = null;
+    let bodyFat = null;
     try {
       const weightResponse = await fetch(
         `https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`,
@@ -130,9 +131,27 @@ serve(async (req) => {
           console.log(`Found weight data: ${weight} kg`);
         }
       }
-    } catch (weightError) {
-      console.error('Error fetching weight data:', weightError);
-      // Continue even if weight fetch fails
+
+      // Fetch body fat data
+      const fatResponse = await fetch(
+        `https://api.fitbit.com/1/user/-/body/log/fat/date/${date}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (fatResponse.ok) {
+        const fatData = await fatResponse.json();
+        if (fatData.fat && fatData.fat.length > 0) {
+          bodyFat = fatData.fat[0].fat;
+          console.log(`Found body fat data: ${bodyFat}%`);
+        }
+      }
+    } catch (bodyError) {
+      console.error('Error fetching body data:', bodyError);
+      // Continue even if body data fetch fails
     }
 
     // Upsert daily log
@@ -144,6 +163,7 @@ serve(async (req) => {
         steps: steps,
         calorie_burn: caloriesOut,
         weight: weight,
+        body_fat_percentage: bodyFat,
         synced_from_fitbit: true,
       }, {
         onConflict: 'user_id,log_date',
@@ -167,7 +187,7 @@ serve(async (req) => {
         user_id: user.id,
         sync_date: date,
         status: 'success',
-        message: `Synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}`,
+        message: `Synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}${bodyFat ? `, ${bodyFat}% fat` : ''}`,
       });
 
     return new Response(
@@ -177,6 +197,7 @@ serve(async (req) => {
         steps: steps,
         calories_out: caloriesOut,
         weight: weight,
+        body_fat_percentage: bodyFat,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

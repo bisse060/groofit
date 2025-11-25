@@ -147,8 +147,9 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
     const steps = activityData.summary?.steps || 0;
     const caloriesOut = activityData.summary?.caloriesOut || 0;
 
-    // Fetch weight data from Fitbit
+    // Fetch weight and body fat data from Fitbit
     let weight = null;
+    let bodyFat = null;
     try {
       const weightResponse = await fetch(
         `https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`,
@@ -166,8 +167,26 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
           console.log(`Found weight data for user ${userId}: ${weight} kg`);
         }
       }
-    } catch (weightError) {
-      console.error('Error fetching weight data:', weightError);
+
+      // Fetch body fat data
+      const fatResponse = await fetch(
+        `https://api.fitbit.com/1/user/-/body/log/fat/date/${date}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (fatResponse.ok) {
+        const fatData = await fatResponse.json();
+        if (fatData.fat && fatData.fat.length > 0) {
+          bodyFat = fatData.fat[0].fat;
+          console.log(`Found body fat data for user ${userId}: ${bodyFat}%`);
+        }
+      }
+    } catch (bodyError) {
+      console.error('Error fetching body data:', bodyError);
     }
 
     // Upsert daily log
@@ -179,6 +198,7 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
         steps: steps,
         calorie_burn: caloriesOut,
         weight: weight,
+        body_fat_percentage: bodyFat,
         synced_from_fitbit: true,
       }, {
         onConflict: 'user_id,log_date',
@@ -201,13 +221,14 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
         user_id: userId,
         sync_date: date,
         status: 'success',
-        message: `Auto-synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}`,
+        message: `Auto-synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}${bodyFat ? `, ${bodyFat}% fat` : ''}`,
       });
 
     return {
       steps,
       calories_out: caloriesOut,
       weight: weight,
+      body_fat_percentage: bodyFat,
       date
     };
   } catch (error) {
