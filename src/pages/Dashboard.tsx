@@ -9,6 +9,7 @@ import Layout from '@/components/Layout';
 import WeightTrendChart from '@/components/charts/WeightTrendChart';
 import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
 import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
+import SleepSummaryCard from '@/components/dashboard/SleepSummaryCard';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -132,9 +133,10 @@ export default function Dashboard() {
           })}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <WeightTrendChart />
           <ProgressIndicator />
+          <SleepSummaryCard />
         </div>
 
         <CrossDayHighlights />

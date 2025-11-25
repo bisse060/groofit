@@ -13,6 +13,7 @@ import {
   Camera,
   Shield,
   LogOut,
+  Moon,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -29,6 +30,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/daily-logs', icon: FileText, label: t('nav.dailyLogs') },
     { path: '/measurements', icon: Ruler, label: t('nav.measurements') },
+    { path: '/sleep', icon: Moon, label: 'Slaap' },
     { path: '/comparisons', icon: GitCompare, label: t('nav.comparisons') },
   ];
 
