@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Moon, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { nl } from 'date-fns/locale/nl';
 
 export default function SleepAnalysis() {
   const { user } = useAuth();
@@ -26,6 +26,7 @@ export default function SleepAnalysis() {
 
   const loadSleepAnalysis = async () => {
     try {
+      console.log('Loading sleep analysis...');
       // Get sleep logs for last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -37,7 +38,12 @@ export default function SleepAnalysis() {
         .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading sleep data:', error);
+        throw error;
+      }
+
+      console.log('Sleep data loaded:', data?.length || 0, 'records');
 
       if (data && data.length > 0) {
         setSleepData(data);
@@ -73,7 +79,13 @@ export default function SleepAnalysis() {
   if (loading) {
     return (
       <Card className="col-span-full">
-        <CardContent className="pt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Moon className="h-5 w-5" />
+            Slaapanalyse (afgelopen 30 dagen)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-8">
           <p className="text-center text-muted-foreground">Slaapdata laden...</p>
         </CardContent>
       </Card>
@@ -89,10 +101,16 @@ export default function SleepAnalysis() {
             Slaapanalyse (afgelopen 30 dagen)
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-4">
-            Nog geen slaapdata beschikbaar. Sync je Fitbit om slaapdata te laden.
-          </p>
+        <CardContent className="py-8">
+          <div className="text-center space-y-3">
+            <Moon className="h-12 w-12 mx-auto text-muted-foreground/50" />
+            <p className="text-muted-foreground">
+              Nog geen slaapdata beschikbaar voor de afgelopen 30 dagen.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Sync je Fitbit op de Profiel pagina om slaapdata te laden.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
