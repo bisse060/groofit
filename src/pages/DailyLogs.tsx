@@ -10,7 +10,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { format } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DailyLog {
   id: string;
@@ -94,6 +95,19 @@ export default function DailyLogs() {
     }
   };
 
+  const handlePreviousDay = () => {
+    const previousDate = subDays(new Date(selectedDate), 1);
+    setSelectedDate(format(previousDate, 'yyyy-MM-dd'));
+  };
+
+  const handleNextDay = () => {
+    const nextDate = addDays(new Date(selectedDate), 1);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (format(nextDate, 'yyyy-MM-dd') <= today) {
+      setSelectedDate(format(nextDate, 'yyyy-MM-dd'));
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -154,13 +168,33 @@ export default function DailyLogs() {
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">{t('logs.date')}</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    max={format(new Date(), 'yyyy-MM-dd')}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handlePreviousDay}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      max={format(new Date(), 'yyyy-MM-dd')}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleNextDay}
+                      disabled={selectedDate >= format(new Date(), 'yyyy-MM-dd')}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
