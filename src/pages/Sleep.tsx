@@ -1,39 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Moon, Clock, Zap, TrendingUp } from 'lucide-react';
 import Layout from '@/components/Layout';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
+import { SleepSummaryCard } from '@/components/sleep/SleepSummaryCard';
+import { SleepDurationChart } from '@/components/sleep/SleepDurationChart';
+import { SleepPhasesChart } from '@/components/sleep/SleepPhasesChart';
 
 interface SleepLog {
   id: string;
   date: string;
-  duration_minutes: number;
-  efficiency: number;
-  score: number;
-  deep_minutes: number;
-  rem_minutes: number;
-  light_minutes: number;
-  wake_minutes: number;
-  start_time: string;
-  end_time: string;
+  duration_minutes: number | null;
+  efficiency: number | null;
+  score: number | null;
+  deep_minutes: number | null;
+  rem_minutes: number | null;
+  light_minutes: number | null;
+  wake_minutes: number | null;
+  start_time: string | null;
+  end_time: string | null;
 }
 
 export default function Sleep() {
   const { user } = useAuth();
-  const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
-  const [latestSleep, setLatestSleep] = useState<SleepLog | null>(null);
+  const [logs, setLogs] = useState<SleepLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      loadSleepData();
+      loadSleepLogs();
     }
   }, [user]);
 
-  const loadSleepData = async () => {
+  const loadSleepLogs = async () => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -46,40 +45,22 @@ export default function Sleep() {
         .order('date', { ascending: false });
 
       if (error) throw error;
-
-      setSleepLogs(data || []);
-      setLatestSleep(data?.[0] || null);
+      setLogs(data || []);
     } catch (error) {
-      console.error('Error loading sleep data:', error);
+      console.error('Error loading sleep logs:', error);
+      setLogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}u ${mins}m`;
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-orange-500';
-    return 'text-red-500';
-  };
-
-  const chartData = sleepLogs
-    .slice(0, 14)
-    .reverse()
-    .map(log => ({
-      date: format(new Date(log.date), 'dd/MM'),
-      'Duur (uur)': (log.duration_minutes / 60).toFixed(1),
-      'Score': log.score,
-      'Deep': log.deep_minutes,
-      'REM': log.rem_minutes,
-      'Light': log.light_minutes,
-      'Wake': log.wake_minutes,
-    }));
+  const latest = useMemo(() => {
+    return logs.length
+      ? [...logs].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )[0]
+      : null;
+  }, [logs]);
 
   if (loading) {
     return (
@@ -91,15 +72,15 @@ export default function Sleep() {
     );
   }
 
-  if (!latestSleep) {
+  if (!latest) {
     return (
       <Layout>
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold">Slaap Tracking</h1>
+          <h1 className="text-2xl font-bold">Slaapoverzicht</h1>
           <Card>
             <CardContent className="pt-6">
               <p className="text-muted-foreground text-center">
-                Geen slaapdata beschikbaar. Sync je Fitbit om slaapdata te bekijken.
+                Nog geen slaapdata. Sync je Fitbit om te beginnen.
               </p>
             </CardContent>
           </Card>
@@ -111,142 +92,29 @@ export default function Sleep() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Slaap Tracking</h1>
-          <p className="text-muted-foreground">Jouw slaapoverzicht en trends</p>
-        </div>
+        <h1 className="text-2xl font-bold">Slaapoverzicht</h1>
 
-        {/* Latest Night Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Moon className="h-5 w-5" />
-              Laatste Nacht ({format(new Date(latestSleep.date), 'dd MMMM yyyy')})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center">
-                <div className={`text-4xl font-bold ${getScoreColor(latestSleep.score)}`}>
-                  {latestSleep.score}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">Slaap Score</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold">
-                  {formatDuration(latestSleep.duration_minutes)}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">Totale Duur</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold">
-                  {latestSleep.efficiency}%
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">Efficiëntie</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SleepSummaryCard log={latest} />
 
-        {/* Sleep Phases */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Moon className="h-4 w-4 text-blue-500" />
-                Diepe Slaap
-              </CardTitle>
+            <CardHeader>
+              <CardTitle>Slaapduur laatste 30 dagen</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{latestSleep.deep_minutes}m</div>
+              <SleepDurationChart logs={logs} />
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Zap className="h-4 w-4 text-purple-500" />
-                REM Slaap
-              </CardTitle>
+            <CardHeader>
+              <CardTitle>Slaapfasen laatste 30 dagen</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{latestSleep.rem_minutes}m</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Moon className="h-4 w-4 text-cyan-500" />
-                Lichte Slaap
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{latestSleep.light_minutes}m</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Clock className="h-4 w-4 text-orange-500" />
-                Wakker
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{latestSleep.wake_minutes}m</div>
+              <SleepPhasesChart logs={logs} />
             </CardContent>
           </Card>
         </div>
-
-        {/* Duration Trend Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Slaapduur Trend (Laatste 14 Dagen)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="Duur (uur)" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Sleep Phases Breakdown Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Slaapfases Verdeling (Laatste 14 Dagen)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Deep" stackId="a" fill="#3b82f6" />
-                <Bar dataKey="REM" stackId="a" fill="#a855f7" />
-                <Bar dataKey="Light" stackId="a" fill="#06b6d4" />
-                <Bar dataKey="Wake" stackId="a" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );
