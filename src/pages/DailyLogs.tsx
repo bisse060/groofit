@@ -121,18 +121,35 @@ export default function DailyLogs() {
   const handleSyncFitbit = async () => {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fitbit-sync-daily', {
+      // Sync activity data (steps, calories)
+      const { data: activityData, error: activityError } = await supabase.functions.invoke('fitbit-sync-daily', {
         body: { date: selectedDate },
       });
 
-      if (error) throw error;
+      if (activityError) throw activityError;
 
-      if (data.success) {
-        toast.success(`Fitbit data gesynchroniseerd: ${data.steps} stappen, ${data.calories_out} calorieën`);
+      // Sync sleep data
+      const { data: sleepData, error: sleepError } = await supabase.functions.invoke('fitbit-sync-sleep', {
+        body: { userId: user?.id, date: selectedDate },
+      });
+
+      if (sleepError) {
+        console.error('Sleep sync error:', sleepError);
+      }
+
+      if (activityData?.success) {
+        let message = `Fitbit data gesynchroniseerd: ${activityData.steps} stappen, ${activityData.calories_out} calorieën`;
+        
+        if (sleepData?.success && !sleepData.noData) {
+          message += `, slaap: ${sleepData.duration_minutes} minuten`;
+        }
+        
+        toast.success(message);
+        
         setCurrentLog({
           ...currentLog,
-          steps: data.steps.toString(),
-          calorie_burn: data.calories_out.toString(),
+          steps: activityData.steps.toString(),
+          calorie_burn: activityData.calories_out.toString(),
         });
         loadLogs();
       }
