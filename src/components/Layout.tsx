@@ -15,6 +15,7 @@ import {
   LogOut,
   Moon,
   Dumbbell,
+  BookOpen,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -33,6 +34,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/measurements', icon: Ruler, label: t('nav.measurements') },
     { path: '/sleep', icon: Moon, label: t('nav.sleep') },
     { path: '/workouts', icon: Dumbbell, label: t('nav.workouts') },
+    { path: '/exercises', icon: BookOpen, label: t('nav.exercises') },
     { path: '/comparisons', icon: GitCompare, label: t('nav.comparisons') },
   ];
 

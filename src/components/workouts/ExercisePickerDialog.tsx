@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -9,15 +10,37 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Star, Plus, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Star, Plus, Search, BookOpen, Dumbbell } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Exercise {
   id: string;
   name: string;
   body_part: string | null;
+  difficulty: string | null;
+  equipment: string | null;
   is_favorite: boolean;
+  image_url: string | null;
 }
+
+const BODY_PARTS = [
+  { value: 'all', label: 'Alle' },
+  { value: 'chest', label: 'Borst' },
+  { value: 'back', label: 'Rug' },
+  { value: 'shoulders', label: 'Schouders' },
+  { value: 'arms', label: 'Armen' },
+  { value: 'legs', label: 'Benen' },
+  { value: 'core', label: 'Core' },
+  { value: 'full_body', label: 'Full Body' },
+];
 
 interface ExercisePickerDialogProps {
   open: boolean;
@@ -34,14 +57,36 @@ export default function ExercisePickerDialog({
 }: ExercisePickerDialogProps) {
   const { user } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBodyPart, setSelectedBodyPart] = useState('all');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open && user) {
       loadExercises();
     }
-  }, [open, user, searchQuery]);
+  }, [open, user]);
+
+  useEffect(() => {
+    filterExercises();
+  }, [searchQuery, selectedBodyPart, exercises]);
+
+  const filterExercises = () => {
+    let filtered = exercises;
+
+    if (searchQuery) {
+      filtered = filtered.filter(ex =>
+        ex.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (selectedBodyPart !== 'all') {
+      filtered = filtered.filter(ex => ex.body_part === selectedBodyPart);
+    }
+
+    setFilteredExercises(filtered);
+  };
 
   const loadExercises = async () => {
     try {
@@ -161,8 +206,8 @@ export default function ExercisePickerDialog({
     }
   };
 
-  const favorites = exercises.filter(ex => ex.is_favorite);
-  const nonFavorites = exercises.filter(ex => !ex.is_favorite);
+  const favorites = filteredExercises.filter(ex => ex.is_favorite);
+  const nonFavorites = filteredExercises.filter(ex => !ex.is_favorite);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -172,17 +217,38 @@ export default function ExercisePickerDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Zoek of maak nieuwe oefening..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Zoek of maak nieuwe oefening..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedBodyPart} onValueChange={setSelectedBodyPart}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BODY_PARTS.map(bp => (
+                  <SelectItem key={bp.value} value={bp.value}>
+                    {bp.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {searchQuery && exercises.length === 0 && !loading && (
+          <Link to="/exercises" onClick={onClose}>
+            <Button variant="outline" className="w-full">
+              <BookOpen className="h-4 w-4" />
+              Open Exercise Library
+            </Button>
+          </Link>
+
+          {searchQuery && filteredExercises.length === 0 && !loading && (
             <Button
               onClick={() => createAndAddExercise(searchQuery)}
               variant="outline"
@@ -203,14 +269,37 @@ export default function ExercisePickerDialog({
                 {favorites.map((exercise) => (
                   <div
                     key={exercise.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
                     onClick={() => addExerciseToWorkout(exercise.id)}
                   >
-                    <div>
+                    {exercise.image_url ? (
+                      <img
+                        src={exercise.image_url}
+                        alt={exercise.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                        <Dumbbell className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium">{exercise.name}</p>
-                      {exercise.body_part && (
-                        <p className="text-sm text-muted-foreground">
-                          {exercise.body_part}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {exercise.body_part && (
+                          <Badge variant="secondary" className="text-xs">
+                            {BODY_PARTS.find(bp => bp.value === exercise.body_part)?.label}
+                          </Badge>
+                        )}
+                        {exercise.difficulty && (
+                          <Badge variant="outline" className="text-xs">
+                            {exercise.difficulty}
+                          </Badge>
+                        )}
+                      </div>
+                      {exercise.equipment && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {exercise.equipment}
                         </p>
                       )}
                     </div>
@@ -237,14 +326,37 @@ export default function ExercisePickerDialog({
                 {nonFavorites.map((exercise) => (
                   <div
                     key={exercise.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
                     onClick={() => addExerciseToWorkout(exercise.id)}
                   >
-                    <div>
+                    {exercise.image_url ? (
+                      <img
+                        src={exercise.image_url}
+                        alt={exercise.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                        <Dumbbell className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium">{exercise.name}</p>
-                      {exercise.body_part && (
-                        <p className="text-sm text-muted-foreground">
-                          {exercise.body_part}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {exercise.body_part && (
+                          <Badge variant="secondary" className="text-xs">
+                            {BODY_PARTS.find(bp => bp.value === exercise.body_part)?.label}
+                          </Badge>
+                        )}
+                        {exercise.difficulty && (
+                          <Badge variant="outline" className="text-xs">
+                            {exercise.difficulty}
+                          </Badge>
+                        )}
+                      </div>
+                      {exercise.equipment && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {exercise.equipment}
                         </p>
                       )}
                     </div>

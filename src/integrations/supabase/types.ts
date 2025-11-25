@@ -102,26 +102,47 @@ export type Database = {
         Row: {
           body_part: string | null
           created_at: string | null
+          difficulty: string | null
+          equipment: string | null
           id: string
+          image_url: string | null
+          instructions: string | null
           is_favorite: boolean | null
           name: string
+          primary_muscles: string[] | null
+          secondary_muscles: string[] | null
           user_id: string
+          video_url: string | null
         }
         Insert: {
           body_part?: string | null
           created_at?: string | null
+          difficulty?: string | null
+          equipment?: string | null
           id?: string
+          image_url?: string | null
+          instructions?: string | null
           is_favorite?: boolean | null
           name: string
+          primary_muscles?: string[] | null
+          secondary_muscles?: string[] | null
           user_id: string
+          video_url?: string | null
         }
         Update: {
           body_part?: string | null
           created_at?: string | null
+          difficulty?: string | null
+          equipment?: string | null
           id?: string
+          image_url?: string | null
+          instructions?: string | null
           is_favorite?: boolean | null
           name?: string
+          primary_muscles?: string[] | null
+          secondary_muscles?: string[] | null
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
