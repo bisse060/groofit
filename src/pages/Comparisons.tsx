@@ -16,6 +16,7 @@ interface Measurement {
   id: string;
   measurement_date: string;
   weight: number | null;
+  shoulder_cm: number | null;
   chest_cm: number | null;
   waist_cm: number | null;
   hips_cm: number | null;
@@ -155,6 +156,7 @@ export default function Comparisons() {
 
   const comparisonFields = [
     { key: 'weight', label: t('logs.weight'), unit: 'kg' },
+    { key: 'shoulder_cm', label: 'Schouders', unit: 'cm' },
     { key: 'chest_cm', label: t('measurements.chest'), unit: 'cm' },
     { key: 'waist_cm', label: t('measurements.waist'), unit: 'cm' },
     { key: 'hips_cm', label: t('measurements.hips'), unit: 'cm' },

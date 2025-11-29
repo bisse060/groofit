@@ -17,6 +17,7 @@ interface Measurement {
   id: string;
   measurement_date: string;
   weight: number | null;
+  shoulder_cm: number | null;
   chest_cm: number | null;
   waist_cm: number | null;
   hips_cm: number | null;
@@ -43,6 +44,7 @@ export default function Measurements() {
   const [formData, setFormData] = useState({
     measurement_date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
+    shoulder_cm: '',
     chest_cm: '',
     waist_cm: '',
     hips_cm: '',
@@ -124,6 +126,7 @@ export default function Measurements() {
           user_id: user?.id,
           measurement_date: formData.measurement_date,
           weight: formData.weight ? parseFloat(formData.weight) : null,
+          shoulder_cm: formData.shoulder_cm ? parseFloat(formData.shoulder_cm) : null,
           chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
           waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
           hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
@@ -177,6 +180,7 @@ export default function Measurements() {
       setFormData({
         measurement_date: format(new Date(), 'yyyy-MM-dd'),
         weight: '',
+        shoulder_cm: '',
         chest_cm: '',
         waist_cm: '',
         hips_cm: '',
@@ -275,6 +279,19 @@ export default function Measurements() {
                       onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shoulder">Schouders (cm)</Label>
+                    <Input
+                      id="shoulder"
+                      type="number"
+                      step="0.1"
+                      value={formData.shoulder_cm}
+                      onChange={(e) => setFormData({ ...formData, shoulder_cm: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="chest">{t('measurements.chest')}</Label>
                     <Input
@@ -436,6 +453,12 @@ export default function Measurements() {
                       <div>
                         <p className="text-sm text-muted-foreground">Weight</p>
                         <p className="font-semibold">{measurement.weight} kg</p>
+                      </div>
+                    )}
+                    {measurement.shoulder_cm && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Schouders</p>
+                        <p className="font-semibold">{measurement.shoulder_cm} cm</p>
                       </div>
                     )}
                     {measurement.chest_cm && (

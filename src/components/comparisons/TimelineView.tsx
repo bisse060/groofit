@@ -5,6 +5,7 @@ interface Measurement {
   id: string;
   measurement_date: string;
   weight: number | null;
+  shoulder_cm: number | null;
   chest_cm: number | null;
   waist_cm: number | null;
   hips_cm: number | null;
@@ -112,6 +113,12 @@ export default function TimelineView({
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gewicht:</span>
                         <span className="font-medium">{measurement.weight} kg</span>
+                      </div>
+                    )}
+                    {measurement.shoulder_cm !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Schouders:</span>
+                        <span className="font-medium">{measurement.shoulder_cm} cm</span>
                       </div>
                     )}
                     {measurement.chest_cm !== null && (
