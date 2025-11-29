@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Activity } from 'lucide-react';
 import { toast } from 'sonner';
+import logoWide from '@/assets/groofit-logo-wide.png';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -66,7 +66,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="absolute top-4 right-4 flex gap-2">
         <Button
           variant={language === 'nl' ? 'default' : 'outline'}
@@ -84,19 +84,19 @@ export default function Auth() {
         </Button>
       </div>
 
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary rounded-full">
-              <Activity className="h-8 w-8 text-primary-foreground" />
-            </div>
+      <Card className="w-full max-w-md shadow-xl border-border/50">
+        <CardHeader className="text-center space-y-6">
+          <div className="flex justify-center">
+            <img src={logoWide} alt="GrooFit" className="h-16 w-auto" />
           </div>
-          <CardTitle className="text-2xl">
-            {isLogin ? t('auth.login') : t('auth.signup')}
-          </CardTitle>
-          <CardDescription>
-            FitTrack - Your personal fitness companion
-          </CardDescription>
+          <div>
+            <CardTitle className="text-2xl">
+              {isLogin ? t('auth.login') : t('auth.signup')}
+            </CardTitle>
+            <CardDescription className="mt-2">
+              Jouw persoonlijke fitness companion
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

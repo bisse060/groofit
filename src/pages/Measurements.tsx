@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
-import { Plus, Camera, X, Trash2 } from 'lucide-react';
+import { Plus, Camera, X, Trash2, Pencil } from 'lucide-react';
 import { ImageCropper } from '@/components/ImageCropper';
 
 interface Measurement {
@@ -42,6 +42,7 @@ export default function Measurements() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [measurementPhotos, setMeasurementPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showForm, setShowForm] = useState(false);
+  const [editingMeasurement, setEditingMeasurement] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     measurement_date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
@@ -112,7 +113,7 @@ export default function Measurements() {
     e.preventDefault();
     
     // Validate that all required photos are provided
-    if (!photos.front || !photos.side || !photos.back) {
+    if (!editingMeasurement && (!photos.front || !photos.side || !photos.back)) {
       toast.error('Please upload all three photos (front, side, back)');
       return;
     }
@@ -120,63 +121,121 @@ export default function Measurements() {
     setSaving(true);
 
     try {
-      // First, create the measurement
-      const { data: measurement, error: measurementError } = await supabase
-        .from('measurements')
-        .insert({
-          user_id: user?.id,
-          measurement_date: formData.measurement_date,
-          weight: formData.weight ? parseFloat(formData.weight) : null,
-          shoulder_cm: formData.shoulder_cm ? parseFloat(formData.shoulder_cm) : null,
-          chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
-          waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
-          hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
-          bicep_left_cm: formData.bicep_left_cm ? parseFloat(formData.bicep_left_cm) : null,
-          bicep_right_cm: formData.bicep_right_cm ? parseFloat(formData.bicep_right_cm) : null,
-          notes: formData.notes,
-        })
-        .select()
-        .single();
+      if (editingMeasurement) {
+        // Update existing measurement
+        const { error: measurementError } = await supabase
+          .from('measurements')
+          .update({
+            measurement_date: formData.measurement_date,
+            weight: formData.weight ? parseFloat(formData.weight) : null,
+            shoulder_cm: formData.shoulder_cm ? parseFloat(formData.shoulder_cm) : null,
+            chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
+            waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
+            hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
+            bicep_left_cm: formData.bicep_left_cm ? parseFloat(formData.bicep_left_cm) : null,
+            bicep_right_cm: formData.bicep_right_cm ? parseFloat(formData.bicep_right_cm) : null,
+            notes: formData.notes,
+          })
+          .eq('id', editingMeasurement);
 
-      if (measurementError) throw measurementError;
+        if (measurementError) throw measurementError;
 
-      // Upload photos
-      const photoTypes: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
-      const uploadPromises = photoTypes.map(async (type) => {
-        const file = photos[type];
-        if (!file) return;
+        // Upload new photos if provided
+        const photoTypes: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
+        const uploadPromises = photoTypes.map(async (type) => {
+          const file = photos[type];
+          if (!file) return;
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user?.id}/${measurement.id}/${type}.${fileExt}`;
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user?.id}/${editingMeasurement}/${type}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('progress-photos')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: true,
+          const { error: uploadError } = await supabase.storage
+            .from('progress-photos')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('progress-photos')
+            .getPublicUrl(fileName);
+
+          // Update or create progress_photos record
+          const { error: photoError } = await supabase.from('progress_photos').upsert({
+            user_id: user?.id,
+            measurement_id: editingMeasurement,
+            photo_date: formData.measurement_date,
+            photo_type: type,
+            photo_url: publicUrl,
           });
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('progress-photos')
-          .getPublicUrl(fileName);
-
-        // Create progress_photos record
-        const { error: photoError } = await supabase.from('progress_photos').insert({
-          user_id: user?.id,
-          measurement_id: measurement.id,
-          photo_date: formData.measurement_date,
-          photo_type: type,
-          photo_url: publicUrl,
+          if (photoError) throw photoError;
         });
 
-        if (photoError) throw photoError;
-      });
+        await Promise.all(uploadPromises);
+        toast.success('Meting bijgewerkt!');
+        setEditingMeasurement(null);
+      } else {
+        // Create new measurement
+        const { data: measurement, error: measurementError } = await supabase
+          .from('measurements')
+          .insert({
+            user_id: user?.id,
+            measurement_date: formData.measurement_date,
+            weight: formData.weight ? parseFloat(formData.weight) : null,
+            shoulder_cm: formData.shoulder_cm ? parseFloat(formData.shoulder_cm) : null,
+            chest_cm: formData.chest_cm ? parseFloat(formData.chest_cm) : null,
+            waist_cm: formData.waist_cm ? parseFloat(formData.waist_cm) : null,
+            hips_cm: formData.hips_cm ? parseFloat(formData.hips_cm) : null,
+            bicep_left_cm: formData.bicep_left_cm ? parseFloat(formData.bicep_left_cm) : null,
+            bicep_right_cm: formData.bicep_right_cm ? parseFloat(formData.bicep_right_cm) : null,
+            notes: formData.notes,
+          })
+          .select()
+          .single();
 
-      await Promise.all(uploadPromises);
+        if (measurementError) throw measurementError;
 
-      toast.success('Measurement and photos saved successfully!');
+        // Upload photos
+        const photoTypes: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
+        const uploadPromises = photoTypes.map(async (type) => {
+          const file = photos[type];
+          if (!file) return;
+
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user?.id}/${measurement.id}/${type}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('progress-photos')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('progress-photos')
+            .getPublicUrl(fileName);
+
+          // Create progress_photos record
+          const { error: photoError } = await supabase.from('progress_photos').insert({
+            user_id: user?.id,
+            measurement_id: measurement.id,
+            photo_date: formData.measurement_date,
+            photo_type: type,
+            photo_url: publicUrl,
+          });
+
+          if (photoError) throw photoError;
+        });
+
+        await Promise.all(uploadPromises);
+        toast.success('Measurement and photos saved successfully!');
+      }
+
       setShowForm(false);
       setFormData({
         measurement_date: format(new Date(), 'yyyy-MM-dd'),
@@ -196,6 +255,40 @@ export default function Measurements() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (measurement: Measurement) => {
+    setEditingMeasurement(measurement.id);
+    setFormData({
+      measurement_date: measurement.measurement_date,
+      weight: measurement.weight?.toString() || '',
+      shoulder_cm: measurement.shoulder_cm?.toString() || '',
+      chest_cm: measurement.chest_cm?.toString() || '',
+      waist_cm: measurement.waist_cm?.toString() || '',
+      hips_cm: measurement.hips_cm?.toString() || '',
+      bicep_left_cm: measurement.bicep_left_cm?.toString() || '',
+      bicep_right_cm: measurement.bicep_right_cm?.toString() || '',
+      notes: measurement.notes || '',
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMeasurement(null);
+    setShowForm(false);
+    setFormData({
+      measurement_date: format(new Date(), 'yyyy-MM-dd'),
+      weight: '',
+      shoulder_cm: '',
+      chest_cm: '',
+      waist_cm: '',
+      hips_cm: '',
+      bicep_left_cm: '',
+      bicep_right_cm: '',
+      notes: '',
+    });
+    setPhotos({ front: null, side: null, back: null });
   };
 
   const handlePhotoSelect = (type: 'front' | 'side' | 'back', file: File | null) => {
@@ -264,7 +357,7 @@ export default function Measurements() {
         {showForm && (
           <Card>
             <CardHeader>
-              <CardTitle>New Measurement</CardTitle>
+              <CardTitle>{editingMeasurement ? 'Meting Bewerken' : 'New Measurement'}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -410,7 +503,7 @@ export default function Measurements() {
                               <img
                                 src={URL.createObjectURL(photos[type]!)}
                                 alt={`${type} preview`}
-                                className="w-full aspect-[5/16] object-contain rounded-lg bg-muted"
+                                className="w-full h-32 object-contain rounded-lg bg-muted"
                               />
                               <Button
                                 type="button"
@@ -430,20 +523,32 @@ export default function Measurements() {
                 </div>
 
                 <div className="flex gap-2">
+                  {editingMeasurement && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                      className="flex-1"
+                    >
+                      Annuleren
+                    </Button>
+                  )}
                   <Button type="submit" disabled={saving} className="flex-1">
-                    {saving ? t('common.loading') : t('common.save')}
+                    {saving ? t('common.loading') : (editingMeasurement ? 'Bijwerken' : t('common.save'))}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowForm(false);
-                      setPhotos({ front: null, side: null, back: null });
-                    }}
-                    className="flex-1"
-                  >
-                    {t('common.cancel')}
-                  </Button>
+                  {!editingMeasurement && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowForm(false);
+                        setPhotos({ front: null, side: null, back: null });
+                      }}
+                      className="flex-1"
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                  )}
                 </div>
               </form>
             </CardContent>
@@ -460,27 +565,32 @@ export default function Measurements() {
                     <CardTitle className="text-lg">
                       {format(new Date(measurement.measurement_date), 'MMMM dd, yyyy')}
                     </CardTitle>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Measurement</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this measurement? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteMeasurement(measurement.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(measurement)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Measurement</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this measurement? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMeasurement(measurement.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -543,7 +653,7 @@ export default function Measurements() {
                               <img
                                 src={photo.photo_url}
                                 alt={`${type} view`}
-                                className="w-full aspect-[5/16] object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity bg-muted"
+                                className="w-full aspect-[5/16] object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity bg-muted scale-[0.6]"
                                 onClick={() => window.open(photo.photo_url, '_blank')}
                               />
                               <p className="text-xs text-center text-muted-foreground capitalize">
