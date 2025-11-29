@@ -253,22 +253,38 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
 async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
   const expiresAt = new Date(credentials.token_expires_at);
   
-  // Decrypt the access token
-  const { data: decryptedAccessToken } = await supabaseClient.rpc('decrypt_token', { 
-    encrypted_token: credentials.access_token 
-  });
+  // Try to decrypt the access token, fallback to using it directly if decryption fails
+  let accessToken = credentials.access_token;
+  try {
+    const { data: decryptedAccessToken } = await supabaseClient.rpc('decrypt_token', { 
+      encrypted_token: credentials.access_token 
+    });
+    if (decryptedAccessToken) {
+      accessToken = decryptedAccessToken;
+    }
+  } catch (error) {
+    console.log('Failed to decrypt access token, using stored value directly');
+  }
 
-  // If token is still valid, return decrypted token
+  // If token is still valid, return it
   if (expiresAt > new Date()) {
-    return decryptedAccessToken;
+    return accessToken;
   }
 
   console.log('Token expired, refreshing for user:', userId);
   
-  // Decrypt refresh token for the API call
-  const { data: decryptedRefreshToken } = await supabaseClient.rpc('decrypt_token', { 
-    encrypted_token: credentials.refresh_token 
-  });
+  // Try to decrypt refresh token, fallback to using it directly
+  let refreshToken = credentials.refresh_token;
+  try {
+    const { data: decryptedRefreshToken } = await supabaseClient.rpc('decrypt_token', { 
+      encrypted_token: credentials.refresh_token 
+    });
+    if (decryptedRefreshToken) {
+      refreshToken = decryptedRefreshToken;
+    }
+  } catch (error) {
+    console.log('Failed to decrypt refresh token, using stored value directly');
+  }
 
   const clientId = Deno.env.get('FITBIT_CLIENT_ID');
   const clientSecret = Deno.env.get('FITBIT_CLIENT_SECRET');
@@ -282,7 +298,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: decryptedRefreshToken,
+      refresh_token: refreshToken,
     }),
   });
 
