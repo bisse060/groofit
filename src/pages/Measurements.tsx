@@ -653,7 +653,7 @@ export default function Measurements() {
                               <img
                                 src={photo.photo_url}
                                 alt={`${type} view`}
-                                className="w-full aspect-[5/16] object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity bg-muted scale-[0.6]"
+                                className="w-full aspect-[5/16] object-contain rounded bg-muted cursor-pointer hover:opacity-80 transition-opacity"
                                 onClick={() => window.open(photo.photo_url, '_blank')}
                               />
                               <p className="text-xs text-center text-muted-foreground capitalize">

@@ -189,114 +189,121 @@ export default function Comparisons() {
           </TabsList>
 
           <TabsContent value="comparison" className="space-y-6">
-            {first && second ? (
-              <div className="overflow-x-auto">
-                <div className="flex gap-4 pb-4">
-                  {/* First Measurement Card */}
-                  <Card className="flex-shrink-0 w-80">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg">
-                          {format(new Date(first.measurement_date), 'dd MMM yyyy')}
-                        </h3>
+            <Card>
+              <CardContent className="p-6">
+                {first && second ? (
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4 pb-4">
+                      {/* First Measurement Card */}
+                      <Card className="flex-shrink-0 w-80">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="text-center">
+                            <h3 className="font-semibold text-lg">
+                              {format(new Date(first.measurement_date), 'dd MMM yyyy')}
+                            </h3>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['front', 'side', 'back'] as const).map((type) => {
+                              const photo = getPhotoByType(firstPhotos, type);
+                              return photo ? (
+                                <div key={type} className="space-y-1">
+                                  <img 
+                                    src={photo} 
+                                    alt={type}
+                                    className="w-full aspect-[5/16] object-contain rounded bg-muted"
+                                  />
+                                  <p className="text-xs text-center text-muted-foreground capitalize">{type}</p>
+                                </div>
+                              ) : (
+                                <div key={type} className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
+                                  <p className="text-xs text-muted-foreground">-</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="space-y-2 text-sm">
+                            {comparisonFields.map((field) => {
+                              const value = first[field.key as keyof Measurement] as number | null;
+                              if (value === null) return null;
+                              return (
+                                <div key={field.key} className="flex justify-between">
+                                  <span className="text-muted-foreground">{field.label}:</span>
+                                  <span className="font-medium">{value} {field.unit}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Difference Arrow */}
+                      <div className="flex items-center justify-center px-4">
+                        <div className="text-3xl text-muted-foreground">→</div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
-                        {(['front', 'side', 'back'] as const).map((type) => {
-                          const photo = getPhotoByType(firstPhotos, type);
-                          return photo ? (
-                            <div key={type} className="space-y-1">
-                              <img 
-                                src={photo} 
-                                alt={type}
-                                className="w-full aspect-[5/16] object-contain rounded bg-muted"
-                              />
-                              <p className="text-xs text-center text-muted-foreground capitalize">{type}</p>
-                            </div>
-                          ) : (
-                            <div key={type} className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                              <p className="text-xs text-muted-foreground">-</p>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {/* Second Measurement Card */}
+                      <Card className="flex-shrink-0 w-80">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="text-center">
+                            <h3 className="font-semibold text-lg">
+                              {format(new Date(second.measurement_date), 'dd MMM yyyy')}
+                            </h3>
+                          </div>
 
-                      <div className="space-y-2 text-sm">
-                        {comparisonFields.map((field) => {
-                          const value = first[field.key as keyof Measurement] as number | null;
-                          if (value === null) return null;
-                          return (
-                            <div key={field.key} className="flex justify-between">
-                              <span className="text-muted-foreground">{field.label}:</span>
-                              <span className="font-medium">{value} {field.unit}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['front', 'side', 'back'] as const).map((type) => {
+                              const photo = getPhotoByType(secondPhotos, type);
+                              return photo ? (
+                                <div key={type} className="space-y-1">
+                                  <img 
+                                    src={photo} 
+                                    alt={type}
+                                    className="w-full aspect-[5/16] object-contain rounded bg-muted"
+                                  />
+                                  <p className="text-xs text-center text-muted-foreground capitalize">{type}</p>
+                                </div>
+                              ) : (
+                                <div key={type} className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
+                                  <p className="text-xs text-muted-foreground">-</p>
+                                </div>
+                              );
+                            })}
+                          </div>
 
-                  {/* Second Measurement Card */}
-                  <Card className="flex-shrink-0 w-80">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg">
-                          {format(new Date(second.measurement_date), 'dd MMM yyyy')}
-                        </h3>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2">
-                        {(['front', 'side', 'back'] as const).map((type) => {
-                          const photo = getPhotoByType(secondPhotos, type);
-                          return photo ? (
-                            <div key={type} className="space-y-1">
-                              <img 
-                                src={photo} 
-                                alt={type}
-                                className="w-full aspect-[5/16] object-contain rounded bg-muted"
-                              />
-                              <p className="text-xs text-center text-muted-foreground capitalize">{type}</p>
-                            </div>
-                          ) : (
-                            <div key={type} className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                              <p className="text-xs text-muted-foreground">-</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="space-y-2 text-sm">
-                        {comparisonFields.map((field) => {
-                          const value = second[field.key as keyof Measurement] as number | null;
-                          const firstValue = first[field.key as keyof Measurement] as number | null;
-                          const diff = calculateDifference(firstValue, value);
-                          if (value === null) return null;
-                          return (
-                            <div key={field.key} className="flex justify-between items-center">
-                              <span className="text-muted-foreground">{field.label}:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{value} {field.unit}</span>
-                                {diff !== null && diff !== 0 && (
-                                  <span className={`text-xs ${diff > 0 ? 'text-destructive' : 'text-success'}`}>
-                                    ({formatDifference(diff)})
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">{t('comparisons.noData')}</p>
-                </CardContent>
-              </Card>
-            )}
+                          <div className="space-y-2 text-sm">
+                            {comparisonFields.map((field) => {
+                              const value = second[field.key as keyof Measurement] as number | null;
+                              const firstValue = first[field.key as keyof Measurement] as number | null;
+                              const diff = calculateDifference(firstValue, value);
+                              if (value === null) return null;
+                              return (
+                                <div key={field.key} className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">{field.label}:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{value} {field.unit}</span>
+                                    {diff !== null && diff !== 0 && (
+                                      <span className={`text-xs ${diff > 0 ? 'text-destructive' : 'text-success'}`}>
+                                        ({formatDifference(diff)})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">{t('comparisons.noData')}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="timeline" className="space-y-6">
