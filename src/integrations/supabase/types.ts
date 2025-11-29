@@ -608,6 +608,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_token: { Args: { encrypted_token: string }; Returns: string }
+      encrypt_token: { Args: { token: string }; Returns: string }
       is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
