@@ -48,7 +48,7 @@ export default function Layout({ children }: LayoutProps) {
       <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center">
-            <img src={logoWide} alt="GrooFit" className="h-16" />
+            <img src={logoWide} alt="GrooFit" className="h-21" />
           </Link>
 
           <div className="flex items-center gap-2">
