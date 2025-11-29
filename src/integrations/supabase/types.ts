@@ -267,6 +267,7 @@ export type Database = {
           id: string
           measurement_date: string
           notes: string | null
+          shoulder_cm: number | null
           updated_at: string | null
           user_id: string
           waist_cm: number | null
@@ -281,6 +282,7 @@ export type Database = {
           id?: string
           measurement_date: string
           notes?: string | null
+          shoulder_cm?: number | null
           updated_at?: string | null
           user_id: string
           waist_cm?: number | null
@@ -295,6 +297,7 @@ export type Database = {
           id?: string
           measurement_date?: string
           notes?: string | null
+          shoulder_cm?: number | null
           updated_at?: string | null
           user_id?: string
           waist_cm?: number | null
