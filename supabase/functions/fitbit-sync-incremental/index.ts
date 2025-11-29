@@ -82,19 +82,19 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
   
   console.log(`Processing sync for user ${userId}: ${syncProgress.days_synced}/${syncProgress.total_days} days`);
 
-  // Get user profile with Fitbit tokens
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select('fitbit_user_id, fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-    .eq('id', userId)
+  // Get user credentials with Fitbit tokens
+  const { data: credentials, error: credentialsError } = await supabaseAdmin
+    .from('fitbit_credentials')
+    .select('fitbit_user_id, access_token, refresh_token, token_expires_at')
+    .eq('user_id', userId)
     .single();
 
-  if (profileError || !profile || !profile.fitbit_user_id) {
+  if (credentialsError || !credentials || !credentials.fitbit_user_id) {
     throw new Error('Fitbit not connected');
   }
 
   // Refresh token if needed
-  let accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, profile);
+  let accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, credentials);
 
   let daysSyncedThisRun = 0;
   let successCount = 0;
@@ -112,12 +112,12 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
     try {
       // Refresh token every 10 requests
       if (i > 0 && i % 10 === 0) {
-        const { data: refreshProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-          .eq('id', userId)
+        const { data: refreshCredentials } = await supabaseAdmin
+          .from('fitbit_credentials')
+          .select('access_token, refresh_token, token_expires_at')
+          .eq('user_id', userId)
           .single();
-        accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, refreshProfile);
+        accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, refreshCredentials);
       }
 
       // Sync activity data
@@ -158,12 +158,12 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
     })
     .eq('user_id', userId);
 
-  // Update profile last sync time
+  // Update credentials last sync time
   if (successCount > 0) {
     await supabaseAdmin
-      .from('profiles')
-      .update({ fitbit_last_sync_at: new Date().toISOString() })
-      .eq('id', userId);
+      .from('fitbit_credentials')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('user_id', userId);
   }
 
   return {
@@ -177,11 +177,11 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
   };
 }
 
-async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile: any) {
-  const expiresAt = new Date(profile.fitbit_token_expires_at);
+async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
+  const expiresAt = new Date(credentials.token_expires_at);
   
   if (expiresAt > new Date(Date.now() + 300000)) { // 5 minutes buffer
-    return profile.fitbit_access_token;
+    return credentials.access_token;
   }
 
   console.log('Token expired, refreshing...');
@@ -198,7 +198,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: profile.fitbit_refresh_token,
+      refresh_token: credentials.refresh_token,
     }),
   });
 
@@ -210,13 +210,13 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
   await supabaseClient
-    .from('profiles')
+    .from('fitbit_credentials')
     .update({
-      fitbit_access_token: tokenData.access_token,
-      fitbit_refresh_token: tokenData.refresh_token,
-      fitbit_token_expires_at: newExpiresAt.toISOString(),
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: newExpiresAt.toISOString(),
     })
-    .eq('id', userId);
+    .eq('user_id', userId);
 
   return tokenData.access_token;
 }

@@ -34,25 +34,25 @@ Deno.serve(async (req) => {
 
     console.log(`Syncing sleep data for user ${userId} on ${date}`);
 
-    // 1: Fetch user profile
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-      .eq('id', userId)
+    // 1: Fetch user credentials
+    const { data: credentials, error: credentialsError } = await supabaseAdmin
+      .from('fitbit_credentials')
+      .select('access_token, refresh_token, token_expires_at')
+      .eq('user_id', userId)
       .single();
 
-    if (profileError || !profile?.fitbit_access_token) {
-      console.error('Profile error:', profileError);
+    if (credentialsError || !credentials?.access_token) {
+      console.error('Credentials error:', credentialsError);
       return new Response(
         JSON.stringify({ error: 'Fitbit not connected' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let accessToken = profile.fitbit_access_token;
-    const refreshToken = profile.fitbit_refresh_token;
-    const expiresAt = profile.fitbit_token_expires_at
-      ? new Date(profile.fitbit_token_expires_at)
+    let accessToken = credentials.access_token;
+    const refreshToken = credentials.refresh_token;
+    const expiresAt = credentials.token_expires_at
+      ? new Date(credentials.token_expires_at)
       : null;
 
     // 2. Refresh token if needed
@@ -83,13 +83,14 @@ Deno.serve(async (req) => {
       const newExpiresAt = new Date(now.getTime() + tokenJson.expires_in * 1000).toISOString();
 
       await supabaseAdmin
-        .from('profiles')
+        .from('fitbit_credentials')
         .update({
-          fitbit_access_token: tokenJson.access_token,
-          fitbit_refresh_token: tokenJson.refresh_token ?? refreshToken,
-          fitbit_token_expires_at: newExpiresAt,
+          access_token: tokenJson.access_token,
+          refresh_token: tokenJson.refresh_token ?? refreshToken,
+          token_expires_at: newExpiresAt,
+          last_sync_at: new Date().toISOString(),
         })
-        .eq('id', userId);
+        .eq('user_id', userId);
     }
 
     // 3: Fetch sleep data from Fitbit

@@ -6,11 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile: any) {
-  const expiresAt = new Date(profile.fitbit_token_expires_at);
+async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
+  const expiresAt = new Date(credentials.token_expires_at);
   
   if (expiresAt > new Date()) {
-    return profile.fitbit_access_token;
+    return credentials.access_token;
   }
 
   console.log('Token expired, refreshing...');
@@ -27,7 +27,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: profile.fitbit_refresh_token,
+      refresh_token: credentials.refresh_token,
     }),
   });
 
@@ -41,13 +41,13 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
   await supabaseClient
-    .from('profiles')
+    .from('fitbit_credentials')
     .update({
-      fitbit_access_token: tokenData.access_token,
-      fitbit_refresh_token: tokenData.refresh_token,
-      fitbit_token_expires_at: newExpiresAt.toISOString(),
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: newExpiresAt.toISOString(),
     })
-    .eq('id', userId);
+    .eq('user_id', userId);
 
   return tokenData.access_token;
 }
@@ -76,19 +76,19 @@ serve(async (req) => {
 
     const { date } = await req.json();
 
-    // Get profile with Fitbit tokens
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('fitbit_user_id, fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-      .eq('id', user.id)
+    // Get credentials with Fitbit tokens
+    const { data: credentials, error: credentialsError } = await supabaseClient
+      .from('fitbit_credentials')
+      .select('fitbit_user_id, access_token, refresh_token, token_expires_at')
+      .eq('user_id', user.id)
       .single();
 
-    if (profileError || !profile || !profile.fitbit_user_id) {
+    if (credentialsError || !credentials || !credentials.fitbit_user_id) {
       throw new Error('Fitbit not connected');
     }
 
     // Refresh token if needed
-    const accessToken = await refreshTokenIfNeeded(supabaseClient, user.id, profile);
+    const accessToken = await refreshTokenIfNeeded(supabaseClient, user.id, credentials);
 
     // Fetch activity data from Fitbit
     const activityResponse = await fetch(
@@ -176,9 +176,9 @@ serve(async (req) => {
 
     // Update last sync time
     await supabaseClient
-      .from('profiles')
-      .update({ fitbit_last_sync_at: new Date().toISOString() })
-      .eq('id', user.id);
+      .from('fitbit_credentials')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('user_id', user.id);
 
     // Log sync
     await supabaseClient

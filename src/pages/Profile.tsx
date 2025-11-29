@@ -25,9 +25,11 @@ export default function Profile() {
     height_cm: '',
     goals: '',
     instagram_username: '',
+  });
+  const [fitbitCredentials, setFitbitCredentials] = useState({
     fitbit_user_id: null as string | null,
-    fitbit_connected_at: null as string | null,
-    fitbit_last_sync_at: null as string | null,
+    connected_at: null as string | null,
+    last_sync_at: null as string | null,
   });
   const [connectingFitbit, setConnectingFitbit] = useState(false);
   const [syncingHistorical, setSyncingHistorical] = useState(false);
@@ -83,14 +85,24 @@ export default function Profile() {
           height_cm: data.height_cm?.toString() || '',
           goals: data.goals || '',
           instagram_username: data.instagram_username || '',
-          fitbit_user_id: data.fitbit_user_id,
-          fitbit_connected_at: data.fitbit_connected_at,
-          fitbit_last_sync_at: data.fitbit_last_sync_at,
         });
       }
 
-      // Load sync progress if user has Fitbit connected
-      if (data?.fitbit_user_id) {
+      // Load Fitbit credentials from separate table
+      const { data: credentials } = await supabase
+        .from('fitbit_credentials')
+        .select('fitbit_user_id, connected_at, last_sync_at')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (credentials) {
+        setFitbitCredentials({
+          fitbit_user_id: credentials.fitbit_user_id,
+          connected_at: credentials.connected_at,
+          last_sync_at: credentials.last_sync_at,
+        });
+
+        // Load sync progress if user has Fitbit connected
         const { data: progress } = await supabase
           .from('fitbit_sync_progress')
           .select('*')
@@ -163,17 +175,9 @@ export default function Profile() {
   const handleDisconnectFitbit = async () => {
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({
-          fitbit_user_id: null,
-          fitbit_access_token: null,
-          fitbit_refresh_token: null,
-          fitbit_token_expires_at: null,
-          fitbit_scope: null,
-          fitbit_connected_at: null,
-          fitbit_last_sync_at: null,
-        })
-        .eq('id', user?.id);
+        .from('fitbit_credentials')
+        .delete()
+        .eq('user_id', user?.id);
 
       if (error) throw error;
 
@@ -275,7 +279,7 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!profile.fitbit_user_id ? (
+            {!fitbitCredentials.fitbit_user_id ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Verbind je Fitbit-account om stappen en verbranding automatisch in te laden.
@@ -301,14 +305,14 @@ export default function Profile() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">✓ Fitbit verbonden</p>
-                  {profile.fitbit_connected_at && (
+                  {fitbitCredentials.connected_at && (
                     <p className="text-xs text-muted-foreground">
-                      Sinds: {new Date(profile.fitbit_connected_at).toLocaleDateString('nl-NL')}
+                      Sinds: {new Date(fitbitCredentials.connected_at).toLocaleDateString('nl-NL')}
                     </p>
                   )}
-                  {profile.fitbit_last_sync_at && (
+                  {fitbitCredentials.last_sync_at && (
                     <p className="text-xs text-muted-foreground">
-                      Laatst gesynchroniseerd: {new Date(profile.fitbit_last_sync_at).toLocaleString('nl-NL')}
+                      Laatst gesynchroniseerd: {new Date(fitbitCredentials.last_sync_at).toLocaleString('nl-NL')}
                     </p>
                   )}
                 </div>

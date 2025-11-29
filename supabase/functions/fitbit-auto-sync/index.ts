@@ -20,19 +20,23 @@ serve(async (req) => {
     );
 
     // Get all users with Fitbit connected
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, fitbit_user_id, full_name')
+    const { data: credentials, error: credentialsError } = await supabaseAdmin
+      .from('fitbit_credentials')
+      .select(`
+        user_id,
+        fitbit_user_id,
+        profiles!inner(full_name)
+      `)
       .not('fitbit_user_id', 'is', null);
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      throw profilesError;
+    if (credentialsError) {
+      console.error('Error fetching credentials:', credentialsError);
+      throw credentialsError;
     }
 
-    console.log(`Found ${profiles?.length || 0} users with Fitbit connected`);
+    console.log(`Found ${credentials?.length || 0} users with Fitbit connected`);
 
-    if (!profiles || profiles.length === 0) {
+    if (!credentials || credentials.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -51,33 +55,34 @@ serve(async (req) => {
     const results = [];
 
     // Sync each user
-    for (const profile of profiles) {
+    for (const credential of credentials) {
       try {
-        console.log(`Syncing user ${profile.full_name} (${profile.id})...`);
+        const profile = credential.profiles as any;
+        console.log(`Syncing user ${profile.full_name} (${credential.user_id})...`);
         
         // Sync activity data
         const syncData = await syncUserData(
           supabaseAdmin,
-          profile.id,
+          credential.user_id,
           today
         );
 
         // Sync sleep data for yesterday and today
-        await syncSleepData(supabaseAdmin, profile.id, yesterdayStr);
-        await syncSleepData(supabaseAdmin, profile.id, today);
+        await syncSleepData(supabaseAdmin, credential.user_id, yesterdayStr);
+        await syncSleepData(supabaseAdmin, credential.user_id, today);
 
-        console.log(`Sync successful for user ${profile.id}`);
+        console.log(`Sync successful for user ${credential.user_id}`);
         results.push({
-          userId: profile.id,
+          userId: credential.user_id,
           name: profile.full_name,
           success: true,
           data: syncData
         });
       } catch (userError) {
-        console.error(`Error syncing user ${profile.id}:`, userError);
+        console.error(`Error syncing user ${credential.user_id}:`, userError);
         results.push({
-          userId: profile.id,
-          name: profile.full_name,
+          userId: credential.user_id,
+          name: (credential.profiles as any)?.full_name || 'Unknown',
           success: false,
           error: userError instanceof Error ? userError.message : 'Unknown error'
         });
@@ -92,7 +97,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        total: profiles.length,
+        total: credentials.length,
         successful,
         failed,
         results
@@ -113,19 +118,19 @@ serve(async (req) => {
 
 async function syncUserData(supabaseClient: any, userId: string, date: string) {
   try {
-    // Get profile with Fitbit tokens
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('fitbit_user_id, fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-      .eq('id', userId)
+    // Get credentials with Fitbit tokens
+    const { data: credentials, error: credentialsError } = await supabaseClient
+      .from('fitbit_credentials')
+      .select('fitbit_user_id, access_token, refresh_token, token_expires_at')
+      .eq('user_id', userId)
       .single();
 
-    if (profileError || !profile || !profile.fitbit_user_id) {
+    if (credentialsError || !credentials || !credentials.fitbit_user_id) {
       throw new Error('Fitbit not connected');
     }
 
     // Refresh token if needed
-    const accessToken = await refreshTokenIfNeeded(supabaseClient, userId, profile);
+    const accessToken = await refreshTokenIfNeeded(supabaseClient, userId, credentials);
 
     // Fetch activity data from Fitbit
     const activityResponse = await fetch(
@@ -210,9 +215,9 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
 
     // Update last sync time
     await supabaseClient
-      .from('profiles')
-      .update({ fitbit_last_sync_at: new Date().toISOString() })
-      .eq('id', userId);
+      .from('fitbit_credentials')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('user_id', userId);
 
     // Log sync
     await supabaseClient
@@ -245,11 +250,11 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
   }
 }
 
-async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile: any) {
-  const expiresAt = new Date(profile.fitbit_token_expires_at);
+async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
+  const expiresAt = new Date(credentials.token_expires_at);
   
   if (expiresAt > new Date()) {
-    return profile.fitbit_access_token;
+    return credentials.access_token;
   }
 
   console.log('Token expired, refreshing...');
@@ -266,7 +271,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: profile.fitbit_refresh_token,
+      refresh_token: credentials.refresh_token,
     }),
   });
 
@@ -280,30 +285,30 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, profile
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
   await supabaseClient
-    .from('profiles')
+    .from('fitbit_credentials')
     .update({
-      fitbit_access_token: tokenData.access_token,
-      fitbit_refresh_token: tokenData.refresh_token,
-      fitbit_token_expires_at: newExpiresAt.toISOString(),
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: newExpiresAt.toISOString(),
     })
-    .eq('id', userId);
+    .eq('user_id', userId);
 
   return tokenData.access_token;
 }
 
 async function syncSleepData(supabaseClient: any, userId: string, date: string) {
   try {
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('fitbit_access_token, fitbit_refresh_token, fitbit_token_expires_at')
-      .eq('id', userId)
+    const { data: credentials } = await supabaseClient
+      .from('fitbit_credentials')
+      .select('access_token, refresh_token, token_expires_at')
+      .eq('user_id', userId)
       .single();
 
-    if (!profile?.fitbit_access_token) {
+    if (!credentials?.access_token) {
       return;
     }
 
-    const accessToken = await refreshTokenIfNeeded(supabaseClient, userId, profile);
+    const accessToken = await refreshTokenIfNeeded(supabaseClient, userId, credentials);
 
     const fitbitUrl = `https://api.fitbit.com/1.2/user/-/sleep/date/${date}.json`;
     const fitbitResponse = await fetch(fitbitUrl, {

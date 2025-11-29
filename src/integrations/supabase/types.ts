@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fitbit_credentials: {
+        Row: {
+          access_token: string | null
+          connected_at: string | null
+          created_at: string | null
+          fitbit_user_id: string | null
+          id: string
+          last_sync_at: string | null
+          refresh_token: string | null
+          scope: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          fitbit_user_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          fitbit_user_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       fitbit_sync_logs: {
         Row: {
           created_at: string | null
@@ -289,13 +331,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           current_weight: number | null
-          fitbit_access_token: string | null
-          fitbit_connected_at: string | null
-          fitbit_last_sync_at: string | null
-          fitbit_refresh_token: string | null
-          fitbit_scope: string | null
-          fitbit_token_expires_at: string | null
-          fitbit_user_id: string | null
           full_name: string
           goals: string | null
           height_cm: number | null
@@ -308,13 +343,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_weight?: number | null
-          fitbit_access_token?: string | null
-          fitbit_connected_at?: string | null
-          fitbit_last_sync_at?: string | null
-          fitbit_refresh_token?: string | null
-          fitbit_scope?: string | null
-          fitbit_token_expires_at?: string | null
-          fitbit_user_id?: string | null
           full_name: string
           goals?: string | null
           height_cm?: number | null
@@ -327,13 +355,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_weight?: number | null
-          fitbit_access_token?: string | null
-          fitbit_connected_at?: string | null
-          fitbit_last_sync_at?: string | null
-          fitbit_refresh_token?: string | null
-          fitbit_scope?: string | null
-          fitbit_token_expires_at?: string | null
-          fitbit_user_id?: string | null
           full_name?: string
           goals?: string | null
           height_cm?: number | null
