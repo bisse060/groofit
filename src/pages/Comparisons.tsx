@@ -142,16 +142,44 @@ export default function Comparisons() {
     return secondValue - firstValue;
   };
 
-  const formatDifference = (diff: number | null) => {
-    if (diff === null) return '-';
-    const sign = diff > 0 ? '+' : '';
-    return `${sign}${diff.toFixed(1)}`;
+  const calculatePercentage = (firstValue: number | null, secondValue: number | null) => {
+    if (firstValue === null || secondValue === null || firstValue === 0) return null;
+    const diff = secondValue - firstValue;
+    return (diff / firstValue) * 100;
   };
 
-  const DifferenceIcon = ({ diff }: { diff: number | null }) => {
+  const formatDifference = (diff: number | null, percentage: number | null) => {
+    if (diff === null) return '-';
+    const sign = diff > 0 ? '+' : '';
+    const percentSign = percentage && percentage > 0 ? '+' : '';
+    const percentText = percentage !== null ? ` (${percentSign}${percentage.toFixed(1)}%)` : '';
+    return `${sign}${diff.toFixed(1)}${percentText}`;
+  };
+
+  const getDifferenceColor = (diff: number | null, fieldKey: string) => {
+    if (diff === null || diff === 0) return 'text-muted-foreground';
+    // Voor gewicht en taille: afname = groen (goed)
+    // Voor andere metingen: toename = groen (goed, spiergroei)
+    const isWeightOrWaist = fieldKey === 'weight' || fieldKey === 'waist_cm';
+    if (isWeightOrWaist) {
+      return diff < 0 ? 'text-success' : 'text-destructive';
+    } else {
+      return diff > 0 ? 'text-success' : 'text-destructive';
+    }
+  };
+
+  const DifferenceIcon = ({ diff, fieldKey }: { diff: number | null; fieldKey: string }) => {
     if (diff === null || diff === 0) return <Minus className="h-4 w-4 text-muted-foreground" />;
-    if (diff > 0) return <ArrowUp className="h-4 w-4 text-destructive" />;
-    return <ArrowDown className="h-4 w-4 text-success" />;
+    const isWeightOrWaist = fieldKey === 'weight' || fieldKey === 'waist_cm';
+    if (isWeightOrWaist) {
+      // Voor gewicht en taille: afname = groen (goed)
+      if (diff < 0) return <ArrowDown className="h-4 w-4 text-success" />;
+      return <ArrowUp className="h-4 w-4 text-destructive" />;
+    } else {
+      // Voor andere metingen: toename = groen (goed, spiergroei)
+      if (diff > 0) return <ArrowUp className="h-4 w-4 text-success" />;
+      return <ArrowDown className="h-4 w-4 text-destructive" />;
+    }
   };
 
   const comparisonFields = [
@@ -277,6 +305,7 @@ export default function Comparisons() {
                               const value = second[field.key as keyof Measurement] as number | null;
                               const firstValue = first[field.key as keyof Measurement] as number | null;
                               const diff = calculateDifference(firstValue, value);
+                              const percentage = calculatePercentage(firstValue, value);
                               if (value === null) return null;
                               return (
                                 <div key={field.key} className="flex justify-between items-center">
@@ -284,8 +313,8 @@ export default function Comparisons() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium">{value} {field.unit}</span>
                                     {diff !== null && diff !== 0 && (
-                                      <span className={`text-xs ${diff > 0 ? 'text-destructive' : 'text-success'}`}>
-                                        ({formatDifference(diff)})
+                                      <span className={`text-xs ${getDifferenceColor(diff, field.key)}`}>
+                                        ({formatDifference(diff, percentage)})
                                       </span>
                                     )}
                                   </div>
