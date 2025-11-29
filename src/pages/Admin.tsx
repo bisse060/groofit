@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { Users, Activity, TrendingUp } from 'lucide-react';
+import { Users, Activity, TrendingUp, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function Admin() {
   const { user, isAdmin } = useAuth();
@@ -16,10 +20,14 @@ export default function Admin() {
     totalLogs: 0,
     totalMeasurements: 0,
   });
+  const [users, setUsers] = useState<any[]>([]);
+  const [measurements, setMeasurements] = useState<any[]>([]);
 
   useEffect(() => {
     if (user && isAdmin) {
       loadAdminStats();
+      loadUsers();
+      loadMeasurements();
     }
   }, [user, isAdmin]);
 
@@ -40,6 +48,61 @@ export default function Admin() {
       toast.error(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const loadMeasurements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('measurements')
+        .select('id, user_id, measurement_date, weight, profiles(full_name)')
+        .order('measurement_date', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setMeasurements(data || []);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      if (error) throw error;
+      
+      toast.success('User deleted successfully');
+      loadUsers();
+      loadAdminStats();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const deleteMeasurement = async (measurementId: string) => {
+    try {
+      const { error } = await supabase.from('measurements').delete().eq('id', measurementId);
+      if (error) throw error;
+      
+      toast.success('Measurement deleted successfully');
+      loadMeasurements();
+      loadAdminStats();
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
@@ -108,9 +171,96 @@ export default function Admin() {
             <CardTitle>User Management</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              User management features will be available here
-            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.full_name}</TableCell>
+                    <TableCell>{format(new Date(u.created_at), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {u.full_name}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteUser(u.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Measurements Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Weight</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {measurements.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell className="font-medium">{m.profiles?.full_name}</TableCell>
+                    <TableCell>{format(new Date(m.measurement_date), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>{m.weight ? `${m.weight} kg` : '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Measurement</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this measurement? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMeasurement(m.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>

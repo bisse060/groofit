@@ -4,13 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
-import { Plus, Camera, X } from 'lucide-react';
+import { Plus, Camera, X, Trash2 } from 'lucide-react';
 import { ImageCropper } from '@/components/ImageCropper';
 
 interface Measurement {
@@ -215,6 +216,18 @@ export default function Measurements() {
 
   const handlePhotoRemove = (type: 'front' | 'side' | 'back') => {
     setPhotos((prev) => ({ ...prev, [type]: null }));
+  };
+
+  const deleteMeasurement = async (measurementId: string) => {
+    try {
+      const { error } = await supabase.from('measurements').delete().eq('id', measurementId);
+      if (error) throw error;
+      
+      toast.success('Measurement deleted successfully');
+      loadMeasurements();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
   };
 
   if (loading) {
@@ -443,9 +456,32 @@ export default function Measurements() {
             return (
               <Card key={measurement.id}>
                 <CardHeader>
-                  <CardTitle className="text-lg">
-                    {format(new Date(measurement.measurement_date), 'MMMM dd, yyyy')}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">
+                      {format(new Date(measurement.measurement_date), 'MMMM dd, yyyy')}
+                    </CardTitle>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Measurement</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this measurement? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMeasurement(measurement.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-2 md:grid-cols-3">
