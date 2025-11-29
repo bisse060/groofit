@@ -253,12 +253,23 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
 async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
   const expiresAt = new Date(credentials.token_expires_at);
   
+  // Decrypt the access token
+  const { data: decryptedAccessToken } = await supabaseClient.rpc('decrypt_token', { 
+    encrypted_token: credentials.access_token 
+  });
+
+  // If token is still valid, return decrypted token
   if (expiresAt > new Date()) {
-    return credentials.access_token;
+    return decryptedAccessToken;
   }
 
-  console.log('Token expired, refreshing...');
+  console.log('Token expired, refreshing for user:', userId);
   
+  // Decrypt refresh token for the API call
+  const { data: decryptedRefreshToken } = await supabaseClient.rpc('decrypt_token', { 
+    encrypted_token: credentials.refresh_token 
+  });
+
   const clientId = Deno.env.get('FITBIT_CLIENT_ID');
   const clientSecret = Deno.env.get('FITBIT_CLIENT_SECRET');
   const basicAuth = btoa(`${clientId}:${clientSecret}`);
@@ -271,7 +282,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: credentials.refresh_token,
+      refresh_token: decryptedRefreshToken,
     }),
   });
 
@@ -284,11 +295,19 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
   const tokenData = await refreshResponse.json();
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
+  // Encrypt new tokens before storing
+  const { data: encryptedAccessToken } = await supabaseClient.rpc('encrypt_token', { 
+    token: tokenData.access_token 
+  });
+  const { data: encryptedRefreshToken } = await supabaseClient.rpc('encrypt_token', { 
+    token: tokenData.refresh_token 
+  });
+
   await supabaseClient
     .from('fitbit_credentials')
     .update({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
+      access_token: encryptedAccessToken,
+      refresh_token: encryptedRefreshToken,
       token_expires_at: newExpiresAt.toISOString(),
     })
     .eq('user_id', userId);

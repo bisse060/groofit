@@ -77,14 +77,22 @@ serve(async (req) => {
     // Calculate expiration
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-    // Store credentials in secure fitbit_credentials table
+    // Encrypt tokens before storing
+    const { data: encryptedAccessToken } = await supabaseClient.rpc('encrypt_token', { 
+      token: tokenData.access_token 
+    });
+    const { data: encryptedRefreshToken } = await supabaseClient.rpc('encrypt_token', { 
+      token: tokenData.refresh_token 
+    });
+
+    // Store credentials in secure fitbit_credentials table with encrypted tokens
     const { error: updateError } = await supabaseClient
       .from('fitbit_credentials')
       .upsert({
         user_id: user.id,
         fitbit_user_id: tokenData.user_id,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
+        access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
         token_expires_at: expiresAt.toISOString(),
         scope: tokenData.scope,
         connected_at: new Date().toISOString(),
