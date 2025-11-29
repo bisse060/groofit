@@ -11,11 +11,13 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Monitor, Activity, Unlink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
@@ -36,10 +38,14 @@ export default function Profile() {
   const [syncProgress, setSyncProgress] = useState<any>(null);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadProfile();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   // Poll sync progress every 30 seconds if a sync is in progress
   useEffect(() => {

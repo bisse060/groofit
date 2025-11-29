@@ -11,6 +11,7 @@ import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import TimelineView from '@/components/comparisons/TimelineView';
+import { useNavigate } from 'react-router-dom';
 
 interface Measurement {
   id: string;
@@ -32,8 +33,9 @@ interface ProgressPhoto {
 }
 
 export default function Comparisons() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [firstMeasurement, setFirstMeasurement] = useState<string>('');
@@ -43,10 +45,14 @@ export default function Comparisons() {
   const [timelinePhotos, setTimelinePhotos] = useState<Record<string, ProgressPhoto[]>>({});
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadMeasurements();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadMeasurements = async () => {
     try {

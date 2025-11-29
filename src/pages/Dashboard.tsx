@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,8 +14,9 @@ import SleepAnalysis from '@/components/dashboard/SleepAnalysis';
 import LastWorkoutCard from '@/components/dashboard/LastWorkoutCard';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     todaySteps: 0,
     weekWorkouts: 0,
@@ -25,10 +26,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadDashboardData();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadDashboardData = async () => {
     try {
@@ -98,7 +103,7 @@ export default function Dashboard() {
     },
   ];
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">

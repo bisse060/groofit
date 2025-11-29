@@ -12,10 +12,12 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export default function Admin() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -38,12 +40,16 @@ export default function Admin() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user && isAdmin) {
       loadAdminStats();
       loadUsers();
       loadMeasurements();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading, navigate]);
 
   const loadAdminStats = async () => {
     try {

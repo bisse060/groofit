@@ -6,6 +6,7 @@ import Layout from '@/components/Layout';
 import { SleepSummaryCard } from '@/components/sleep/SleepSummaryCard';
 import { SleepDurationChart } from '@/components/sleep/SleepDurationChart';
 import { SleepPhasesChart } from '@/components/sleep/SleepPhasesChart';
+import { useNavigate } from 'react-router-dom';
 
 interface SleepLog {
   id: string;
@@ -22,15 +23,20 @@ interface SleepLog {
 }
 
 export default function Sleep() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [logs, setLogs] = useState<SleepLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadSleepLogs();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadSleepLogs = async () => {
     try {
