@@ -32,14 +32,14 @@ serve(async (req) => {
 
     console.log(`Starting historical sync setup for ${days} days for user ${user.id}`);
 
-    // Get profile with Fitbit tokens
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
+    // Get credentials to verify Fitbit is connected
+    const { data: credentials, error: credentialsError } = await supabaseClient
+      .from('fitbit_credentials')
       .select('fitbit_user_id')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (profileError || !profile || !profile.fitbit_user_id) {
+    if (credentialsError || !credentials || !credentials.fitbit_user_id) {
       throw new Error('Fitbit not connected');
     }
 

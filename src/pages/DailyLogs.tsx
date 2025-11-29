@@ -106,9 +106,9 @@ export default function DailyLogs() {
   const checkFitbitConnection = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('fitbit_credentials')
         .select('fitbit_user_id')
-        .eq('id', user?.id)
+        .eq('user_id', user?.id)
         .single();
 
       if (error) throw error;

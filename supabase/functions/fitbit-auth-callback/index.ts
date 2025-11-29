@@ -77,18 +77,21 @@ serve(async (req) => {
     // Calculate expiration
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-    // Update profile with tokens
+    // Store credentials in secure fitbit_credentials table
     const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({
+      .from('fitbit_credentials')
+      .upsert({
+        user_id: user.id,
         fitbit_user_id: tokenData.user_id,
-        fitbit_access_token: tokenData.access_token,
-        fitbit_refresh_token: tokenData.refresh_token,
-        fitbit_token_expires_at: expiresAt.toISOString(),
-        fitbit_scope: tokenData.scope,
-        fitbit_connected_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        token_expires_at: expiresAt.toISOString(),
+        scope: tokenData.scope,
+        connected_at: new Date().toISOString(),
+        last_sync_at: null,
+      }, {
+        onConflict: 'user_id'
+      });
 
     if (updateError) {
       console.error('Error updating profile:', updateError);
