@@ -311,10 +311,10 @@ export default function Comparisons() {
                                 <img 
                                   src={firstPhoto} 
                                   alt={`First ${type}`}
-                                  className="w-full h-96 object-cover rounded-lg"
+                                  className="w-full aspect-[5/16] object-contain rounded-lg bg-muted"
                                 />
                               ) : (
-                                <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
+                                <div className="w-full aspect-[5/16] bg-muted rounded-lg flex items-center justify-center">
                                   <p className="text-muted-foreground text-sm">No photo</p>
                                 </div>
                               )}
@@ -327,10 +327,10 @@ export default function Comparisons() {
                                 <img 
                                   src={secondPhoto} 
                                   alt={`Second ${type}`}
-                                  className="w-full h-96 object-cover rounded-lg"
+                                  className="w-full aspect-[5/16] object-contain rounded-lg bg-muted"
                                 />
                               ) : (
-                                <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
+                                <div className="w-full aspect-[5/16] bg-muted rounded-lg flex items-center justify-center">
                                   <p className="text-muted-foreground text-sm">No photo</p>
                                 </div>
                               )}

@@ -67,12 +67,12 @@ export default function TimelineView({
                         <img 
                           src={frontPhoto} 
                           alt="Front"
-                          className="w-full h-32 object-cover rounded"
+                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
                         />
                         <p className="text-xs text-center text-muted-foreground">Front</p>
                       </div>
                     ) : (
-                      <div className="h-32 bg-muted rounded flex items-center justify-center">
+                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
                         <p className="text-xs text-muted-foreground">-</p>
                       </div>
                     )}
@@ -82,12 +82,12 @@ export default function TimelineView({
                         <img 
                           src={sidePhoto} 
                           alt="Side"
-                          className="w-full h-32 object-cover rounded"
+                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
                         />
                         <p className="text-xs text-center text-muted-foreground">Side</p>
                       </div>
                     ) : (
-                      <div className="h-32 bg-muted rounded flex items-center justify-center">
+                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
                         <p className="text-xs text-muted-foreground">-</p>
                       </div>
                     )}
@@ -97,12 +97,12 @@ export default function TimelineView({
                         <img 
                           src={backPhoto} 
                           alt="Back"
-                          className="w-full h-32 object-cover rounded"
+                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
                         />
                         <p className="text-xs text-center text-muted-foreground">Back</p>
                       </div>
                     ) : (
-                      <div className="h-32 bg-muted rounded flex items-center justify-center">
+                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
                         <p className="text-xs text-muted-foreground">-</p>
                       </div>
                     )}

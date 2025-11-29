@@ -397,7 +397,7 @@ export default function Measurements() {
                               <img
                                 src={URL.createObjectURL(photos[type]!)}
                                 alt={`${type} preview`}
-                                className="w-full aspect-[9/16] object-cover rounded-lg"
+                                className="w-full aspect-[5/16] object-contain rounded-lg bg-muted"
                               />
                               <Button
                                 type="button"
@@ -507,7 +507,7 @@ export default function Measurements() {
                               <img
                                 src={photo.photo_url}
                                 alt={`${type} view`}
-                                className="w-full aspect-[9/16] object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                className="w-full aspect-[5/16] object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity bg-muted"
                                 onClick={() => window.open(photo.photo_url, '_blank')}
                               />
                               <p className="text-xs text-center text-muted-foreground capitalize">
