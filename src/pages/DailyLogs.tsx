@@ -13,6 +13,7 @@ import Layout from '@/components/Layout';
 import { format, addDays, subDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, X, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 interface DailyLog {
   id: string;
@@ -28,8 +29,9 @@ interface DailyLog {
 }
 
 export default function DailyLogs() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -48,11 +50,15 @@ export default function DailyLogs() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadLogs();
       checkFitbitConnection();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     loadLogForDate(selectedDate);

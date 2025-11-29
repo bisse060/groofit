@@ -20,16 +20,20 @@ interface Workout {
 }
 
 export default function Workouts() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadWorkouts();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadWorkouts = async () => {
     try {

@@ -13,6 +13,7 @@ import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import { Plus, Camera, X, Trash2, Pencil } from 'lucide-react';
 import { ImageCropper } from '@/components/ImageCropper';
+import { useNavigate } from 'react-router-dom';
 
 interface Measurement {
   id: string;
@@ -35,8 +36,9 @@ interface ProgressPhoto {
 }
 
 export default function Measurements() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -69,10 +71,14 @@ export default function Measurements() {
   }>({ type: null, url: null });
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
     if (user) {
       loadMeasurements();
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadMeasurements = async () => {
     try {
