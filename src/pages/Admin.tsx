@@ -576,7 +576,7 @@ export default function Admin() {
               <TableBody>
                 {measurements.map((m) => (
                   <TableRow key={m.id}>
-                    <TableCell className="font-medium">{m.profiles?.full_name}</TableCell>
+                    <TableCell className="font-medium">{m.profiles.full_name}</TableCell>
                     <TableCell>{format(new Date(m.measurement_date), 'dd/MM/yyyy')}</TableCell>
                     <TableCell>{m.weight ? `${m.weight} kg` : '-'}</TableCell>
                     <TableCell className="text-right">
