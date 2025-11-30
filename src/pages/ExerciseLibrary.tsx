@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dumbbell, Plus, Search, Star, Filter } from 'lucide-react';
+import { Dumbbell, Plus, Search, Star, Filter, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import {
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CsvUploadDialog } from '@/components/exercises/CsvUploadDialog';
 
 interface Exercise {
   id: string;
@@ -54,6 +55,7 @@ export default function ExerciseLibrary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBodyPart, setSelectedBodyPart] = useState('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showCsvDialog, setShowCsvDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -132,10 +134,16 @@ export default function ExerciseLibrary() {
             <Dumbbell className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">Exercise Library</h1>
           </div>
-          <Button onClick={() => navigate('/exercises/new')}>
-            <Plus className="h-5 w-5" />
-            Nieuwe Oefening
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowCsvDialog(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importeer CSV
+            </Button>
+            <Button onClick={() => navigate('/exercises/new')}>
+              <Plus className="h-5 w-5" />
+              Nieuwe Oefening
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -264,6 +272,12 @@ export default function ExerciseLibrary() {
             ))}
           </div>
         )}
+
+        <CsvUploadDialog
+          open={showCsvDialog}
+          onClose={() => setShowCsvDialog(false)}
+          onImportComplete={loadExercises}
+        />
       </div>
     </Layout>
   );
