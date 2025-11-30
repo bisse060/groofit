@@ -134,14 +134,33 @@ export default function Admin() {
 
   const loadMeasurements = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: measurementsData, error } = await supabase
         .from('measurements')
-        .select('id, user_id, measurement_date, weight, profiles(full_name)')
+        .select('id, user_id, measurement_date, weight')
         .order('measurement_date', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setMeasurements(data || []);
+
+      // Fetch profile names separately
+      if (measurementsData && measurementsData.length > 0) {
+        const userIds = [...new Set(measurementsData.map(m => m.user_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p.full_name]) || []);
+        
+        const enrichedData = measurementsData.map(m => ({
+          ...m,
+          profiles: { full_name: profilesMap.get(m.user_id) || 'Unknown' }
+        }));
+        
+        setMeasurements(enrichedData);
+      } else {
+        setMeasurements([]);
+      }
     } catch (error: any) {
       toast.error(error.message);
     }
