@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon } from 'lucide-react';
+import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon, Image, Calendar, Weight, Ruler } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,11 +32,13 @@ export default function Admin() {
     dailyLogs: any[];
     workouts: any[];
     sleepLogs: any[];
+    photos: any[];
   }>({
     measurements: [],
     dailyLogs: [],
     workouts: [],
     sleepLogs: [],
+    photos: [],
   });
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function Admin() {
 
   const loadUserDetails = async (userId: string) => {
     try {
-      const [measurementsRes, logsRes, workoutsRes, sleepRes] = await Promise.all([
+      const [measurementsRes, logsRes, workoutsRes, sleepRes, photosRes] = await Promise.all([
         supabase
           .from('measurements')
           .select('*')
@@ -111,6 +113,11 @@ export default function Admin() {
           .eq('user_id', userId)
           .order('date', { ascending: false })
           .limit(30),
+        supabase
+          .from('progress_photos')
+          .select('*')
+          .eq('user_id', userId)
+          .order('photo_date', { ascending: false }),
       ]);
 
       setUserDetails({
@@ -118,6 +125,7 @@ export default function Admin() {
         dailyLogs: logsRes.data || [],
         workouts: workoutsRes.data || [],
         sleepLogs: sleepRes.data || [],
+        photos: photosRes.data || [],
       });
     } catch (error: any) {
       toast.error(error.message);
@@ -304,8 +312,9 @@ export default function Admin() {
 
                               {/* Tabs for different data */}
                               <Tabs defaultValue="measurements" className="w-full">
-                                <TabsList className="grid w-full grid-cols-4">
+                                <TabsList className="grid w-full grid-cols-5">
                                   <TabsTrigger value="measurements">Metingen</TabsTrigger>
+                                  <TabsTrigger value="photos">Foto's</TabsTrigger>
                                   <TabsTrigger value="logs">Logs</TabsTrigger>
                                   <TabsTrigger value="workouts">Workouts</TabsTrigger>
                                   <TabsTrigger value="sleep">Slaap</TabsTrigger>
@@ -317,23 +326,102 @@ export default function Admin() {
                                     {userDetails.measurements.map((m) => (
                                       <Card key={m.id}>
                                         <CardContent className="p-4">
-                                          <div className="flex justify-between items-start mb-2">
-                                            <span className="font-medium">{format(new Date(m.measurement_date), 'dd/MM/yyyy')}</span>
-                                            {m.weight && <span className="text-sm">{m.weight} kg</span>}
+                                          <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-2">
+                                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                                              <span className="font-medium">{format(new Date(m.measurement_date), 'dd/MM/yyyy')}</span>
+                                            </div>
+                                            {m.weight && (
+                                              <div className="flex items-center gap-1 text-sm">
+                                                <Weight className="h-4 w-4 text-primary" />
+                                                <span>{m.weight} kg</span>
+                                              </div>
+                                            )}
                                           </div>
-                                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                            {m.chest_cm && <div>Borst: {m.chest_cm} cm</div>}
-                                            {m.waist_cm && <div>Taille: {m.waist_cm} cm</div>}
-                                            {m.hips_cm && <div>Heupen: {m.hips_cm} cm</div>}
-                                            {m.shoulder_cm && <div>Schouders: {m.shoulder_cm} cm</div>}
-                                            {m.bicep_left_cm && <div>Bicep L: {m.bicep_left_cm} cm</div>}
-                                            {m.bicep_right_cm && <div>Bicep R: {m.bicep_right_cm} cm</div>}
+                                          <div className="grid grid-cols-2 gap-2 text-xs">
+                                            {m.chest_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Borst: {m.chest_cm} cm</span>
+                                              </div>
+                                            )}
+                                            {m.waist_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Taille: {m.waist_cm} cm</span>
+                                              </div>
+                                            )}
+                                            {m.hips_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Heupen: {m.hips_cm} cm</span>
+                                              </div>
+                                            )}
+                                            {m.shoulder_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Schouders: {m.shoulder_cm} cm</span>
+                                              </div>
+                                            )}
+                                            {m.bicep_left_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Bicep L: {m.bicep_left_cm} cm</span>
+                                              </div>
+                                            )}
+                                            {m.bicep_right_cm && (
+                                              <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Ruler className="h-3 w-3" />
+                                                <span>Bicep R: {m.bicep_right_cm} cm</span>
+                                              </div>
+                                            )}
                                           </div>
+                                          {m.notes && (
+                                            <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                                              {m.notes}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     ))}
                                     {userDetails.measurements.length === 0 && (
                                       <p className="text-sm text-muted-foreground">Geen metingen gevonden</p>
+                                    )}
+                                  </div>
+                                </TabsContent>
+
+                                <TabsContent value="photos" className="space-y-2">
+                                  <h4 className="font-semibold text-sm">Voortgangsfoto's ({userDetails.photos.length})</h4>
+                                  <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                                    {userDetails.photos.map((photo) => (
+                                      <Card key={photo.id} className="overflow-hidden">
+                                        <div className="aspect-square relative bg-muted">
+                                          <img
+                                            src={photo.photo_url}
+                                            alt={photo.description || 'Progress photo'}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <CardContent className="p-3">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                                            <p className="text-xs font-medium">
+                                              {format(new Date(photo.photo_date), 'dd/MM/yyyy')}
+                                            </p>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground capitalize">
+                                            {photo.photo_type}
+                                          </p>
+                                          {photo.description && (
+                                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                              {photo.description}
+                                            </p>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                    {userDetails.photos.length === 0 && (
+                                      <p className="text-sm text-muted-foreground col-span-2">Geen foto's gevonden</p>
                                     )}
                                   </div>
                                 </TabsContent>
