@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
+import WatermarkedImage from '@/components/WatermarkedImage';
 
 interface Measurement {
   id: string;
@@ -64,7 +65,7 @@ export default function TimelineView({
                   <div className="grid grid-cols-3 gap-2">
                     {frontPhoto ? (
                       <div className="space-y-1">
-                        <img 
+                        <WatermarkedImage 
                           src={frontPhoto} 
                           alt="Front"
                           className="w-full aspect-[5/16] object-contain rounded bg-muted"
@@ -79,7 +80,7 @@ export default function TimelineView({
                     
                     {sidePhoto ? (
                       <div className="space-y-1">
-                        <img 
+                        <WatermarkedImage 
                           src={sidePhoto} 
                           alt="Side"
                           className="w-full aspect-[5/16] object-contain rounded bg-muted"
@@ -94,7 +95,7 @@ export default function TimelineView({
                     
                     {backPhoto ? (
                       <div className="space-y-1">
-                        <img 
+                        <WatermarkedImage 
                           src={backPhoto} 
                           alt="Back"
                           className="w-full aspect-[5/16] object-contain rounded bg-muted"

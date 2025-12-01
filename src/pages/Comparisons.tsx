@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ArrowDown, ArrowUp, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import TimelineView from '@/components/comparisons/TimelineView';
 import { useNavigate } from 'react-router-dom';
+import WatermarkedImage from '@/components/WatermarkedImage';
 
 interface Measurement {
   id: string;
@@ -262,7 +263,7 @@ export default function Comparisons() {
                               {(() => {
                                 const photo = getPhotoByType(firstPhotos, currentPhotoType);
                                 return photo ? (
-                                  <img 
+                                  <WatermarkedImage 
                                     src={photo} 
                                     alt={currentPhotoType}
                                     className="w-full max-w-[200px] aspect-[5/16] object-contain rounded bg-muted"
@@ -326,7 +327,7 @@ export default function Comparisons() {
                               {(() => {
                                 const photo = getPhotoByType(secondPhotos, currentPhotoType);
                                 return photo ? (
-                                  <img 
+                                  <WatermarkedImage 
                                     src={photo} 
                                     alt={currentPhotoType}
                                     className="w-full max-w-[200px] aspect-[5/16] object-contain rounded bg-muted"
