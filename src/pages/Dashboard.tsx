@@ -151,48 +151,6 @@ export default function Dashboard() {
         <SleepAnalysis />
 
         <CrossDayHighlights />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Link to="/daily-logs">
-                <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
-                  <CardContent className="pt-6 text-center">
-                    <Activity className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <p className="font-semibold">Log Today's Activity</p>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link to="/measurements">
-                <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
-                  <CardContent className="pt-6 text-center">
-                    <TrendingUp className="h-8 w-8 mx-auto mb-2 text-secondary" />
-                    <p className="font-semibold">Add Measurement</p>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link to="/measurements">
-                <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
-                  <CardContent className="pt-6 text-center">
-                    <Camera className="h-8 w-8 mx-auto mb-2 text-success" />
-                    <p className="font-semibold">Add Measurement with Photos</p>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link to="/workouts">
-                <Card className="bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
-                  <CardContent className="pt-6 text-center">
-                    <Dumbbell className="h-8 w-8 mx-auto mb-2 text-accent" />
-                    <p className="font-semibold">Start Workout</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );

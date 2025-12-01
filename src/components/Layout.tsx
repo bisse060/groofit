@@ -74,7 +74,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Navigation */}
-      <nav className="border-b bg-card">
+      <nav className="border-b bg-card sticky top-[88px] z-40 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto">
             {navItems.map((item) => {
