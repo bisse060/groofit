@@ -247,29 +247,6 @@ export default function Comparisons() {
               <CardContent className="p-6">
                 {first && second ? (
                   <div className="space-y-6">
-                    {/* Photo Navigation */}
-                    <div className="flex items-center justify-center gap-4">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handlePreviousPhoto}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <div className="text-center min-w-[120px]">
-                        <h3 className="font-semibold text-lg">
-                          {photoTypeLabels[currentPhotoType]}
-                        </h3>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleNextPhoto}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-
                     <div className="overflow-x-auto">
                       <div className="flex gap-4 pb-4">
                         {/* First Measurement Card */}
@@ -313,9 +290,27 @@ export default function Comparisons() {
                           </CardContent>
                         </Card>
 
-                        {/* Difference Arrow */}
-                        <div className="flex items-center justify-center px-4">
-                          <div className="text-3xl text-muted-foreground">→</div>
+                        {/* Navigation Controls */}
+                        <div className="flex flex-col items-center justify-center gap-4 px-4">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handlePreviousPhoto}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <div className="text-center min-w-[120px]">
+                            <h3 className="font-semibold text-sm">
+                              {photoTypeLabels[currentPhotoType]}
+                            </h3>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleNextPhoto}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
                         </div>
 
                         {/* Second Measurement Card */}
