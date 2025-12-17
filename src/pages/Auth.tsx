@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import logoWide from '@/assets/groofit-logo-wide.png';
+import logoWide from '@/assets/grofit-logo-wide.png';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -87,7 +87,7 @@ export default function Auth() {
       <Card className="w-full max-w-md shadow-xl border-border/50">
         <CardHeader className="text-center space-y-6">
           <div className="flex justify-center">
-            <img src={logoWide} alt="GrooFit" className="h-16 w-auto" />
+            <img src={logoWide} alt="Grofit" className="h-16 w-auto" />
           </div>
           <div>
             <CardTitle className="text-2xl">

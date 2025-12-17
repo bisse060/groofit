@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import logo from '@/assets/groofit-logo.png';
+import logo from '@/assets/grofit-logo.png';
 
 interface WatermarkedImageProps {
   src: string;
