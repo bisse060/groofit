@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png'],
       manifest: {
-        name: 'GrooFit',
-        short_name: 'GrooFit',
+        name: 'Grofit',
+        short_name: 'Grofit',
         description: 'Jouw persoonlijke fitness companion',
         theme_color: '#000000',
         background_color: '#ffffff',
