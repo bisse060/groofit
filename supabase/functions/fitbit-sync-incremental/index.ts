@@ -217,6 +217,12 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
   const clientSecret = Deno.env.get('FITBIT_CLIENT_SECRET');
   const basicAuth = btoa(`${clientId}:${clientSecret}`);
 
+  if (!clientId || !clientSecret) {
+    throw new Error('Missing FITBIT_CLIENT_ID or FITBIT_CLIENT_SECRET environment variables');
+  }
+
+  console.log('Attempting token refresh with client ID:', clientId?.substring(0, 6) + '...');
+  
   const refreshResponse = await fetch('https://api.fitbit.com/oauth2/token', {
     method: 'POST',
     headers: {
@@ -230,7 +236,24 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
   });
 
   if (!refreshResponse.ok) {
-    throw new Error('Failed to refresh token');
+    const errorText = await refreshResponse.text();
+    console.error(`Fitbit token refresh failed: ${refreshResponse.status} - ${errorText}`);
+    
+    // If refresh token is invalid, mark the connection as broken
+    if (refreshResponse.status === 401 || refreshResponse.status === 400) {
+      console.log('Refresh token invalid, user needs to reconnect Fitbit');
+      
+      // Update sync progress to show error
+      await supabaseClient
+        .from('fitbit_sync_progress')
+        .update({
+          status: 'error',
+          error_message: 'Fitbit verbinding verlopen. Verbind opnieuw via je profiel.',
+        })
+        .eq('user_id', userId);
+    }
+    
+    throw new Error(`Failed to refresh token: ${refreshResponse.status} - ${errorText}`);
   }
 
   const tokenData = await refreshResponse.json();
