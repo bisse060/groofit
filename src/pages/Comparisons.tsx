@@ -244,6 +244,40 @@ export default function Comparisons() {
           </TabsList>
 
           <TabsContent value="comparison" className="space-y-6">
+            {/* Date Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Eerste meting (eerder)</label>
+                <Select value={firstMeasurement} onValueChange={setFirstMeasurement}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecteer datum" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {measurements.map((m) => (
+                      <SelectItem key={m.id} value={m.id} disabled={m.id === secondMeasurement}>
+                        {format(new Date(m.measurement_date), 'dd MMM yyyy')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tweede meting (later)</label>
+                <Select value={secondMeasurement} onValueChange={setSecondMeasurement}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecteer datum" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {measurements.map((m) => (
+                      <SelectItem key={m.id} value={m.id} disabled={m.id === firstMeasurement}>
+                        {format(new Date(m.measurement_date), 'dd MMM yyyy')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <Card>
               <CardContent className="p-6">
                 {first && second ? (
