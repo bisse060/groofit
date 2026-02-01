@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import logoWide from '@/assets/grofit-logo-wide.png';
+import BottomNav from '@/components/navigation/BottomNav';
 import {
   LayoutDashboard,
   User,
   FileText,
   Ruler,
   GitCompare,
-  Camera,
   Shield,
   LogOut,
   Moon,
   Dumbbell,
   BookOpen,
+  Sun,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface LayoutProps {
   children: ReactNode;
@@ -25,6 +27,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { signOut, isAdmin } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
 
   const navItems = [
@@ -42,52 +45,76 @@ export default function Layout({ children }: LayoutProps) {
     navItems.push({ path: '/admin', icon: Shield, label: t('nav.admin') });
   }
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Header - Compact and clean */}
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center">
-            <img src={logoWide} alt="Grofit" className="h-20" />
+            <img src={logoWide} alt="Grofit" className="h-8" />
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
-              variant={language === 'nl' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setLanguage('nl')}
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
             >
-              NL
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button
-              variant={language === 'en' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setLanguage('en')}
+            <div className="hidden sm:flex items-center gap-1 mr-2">
+              <Button
+                variant={language === 'nl' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setLanguage('nl')}
+                className="h-8 px-2 text-xs"
+              >
+                NL
+              </Button>
+              <Button
+                variant={language === 'en' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setLanguage('en')}
+                className="h-8 px-2 text-xs"
+              >
+                EN
+              </Button>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={signOut}
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
             >
-              EN
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="border-b bg-card sticky top-[88px] z-40 shadow-sm">
+      {/* Desktop Navigation - Hidden on mobile */}
+      <nav className="hidden md:block sticky top-14 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="container mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path}>
                   <Button
-                    variant={isActive ? 'default' : 'ghost'}
-                    className="flex items-center gap-2 whitespace-nowrap"
+                    variant={isActive ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className={`flex items-center gap-2 whitespace-nowrap h-9 ${
+                      isActive ? 'bg-primary/10 text-primary hover:bg-primary/15' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
-                    {item.label}
+                    <span className="text-sm">{item.label}</span>
                   </Button>
                 </Link>
               );
@@ -97,7 +124,12 @@ export default function Layout({ children }: LayoutProps) {
       </nav>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="page-container">
+        {children}
+      </main>
+
+      {/* Bottom Navigation - Mobile only */}
+      <BottomNav />
     </div>
   );
 }

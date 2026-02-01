@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Moon, TrendingUp, TrendingDown, Clock } from 'lucide-react';
@@ -26,8 +26,6 @@ export default function SleepAnalysis() {
 
   const loadSleepAnalysis = async () => {
     try {
-      console.log('Loading sleep analysis...');
-      // Get sleep logs for last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -38,17 +36,11 @@ export default function SleepAnalysis() {
         .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: true });
 
-      if (error) {
-        console.error('Error loading sleep data:', error);
-        throw error;
-      }
-
-      console.log('Sleep data loaded:', data?.length || 0, 'records');
+      if (error) throw error;
 
       if (data && data.length > 0) {
         setSleepData(data);
 
-        // Calculate stats
         const scores = data.filter(d => d.score).map(d => d.score);
         const durations = data.filter(d => d.duration_minutes).map(d => d.duration_minutes);
 
@@ -62,7 +54,6 @@ export default function SleepAnalysis() {
 
         const avgHours = Math.round(avgMinutes / 60 * 10) / 10;
 
-        // Find best and worst nights
         const sortedByScore = [...data].filter(d => d.score).sort((a, b) => (b.score || 0) - (a.score || 0));
         const bestNight = sortedByScore[0] || null;
         const worstNight = sortedByScore[sortedByScore.length - 1] || null;
@@ -78,45 +69,48 @@ export default function SleepAnalysis() {
 
   if (loading) {
     return (
-      <Card className="col-span-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Moon className="h-5 w-5" />
-            Slaapanalyse (afgelopen 30 dagen)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">Slaapdata laden...</p>
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Slaapanalyse
+        </h2>
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="grid grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="h-16 bg-muted rounded-lg" />
+                ))}
+              </div>
+              <div className="h-[180px] bg-muted rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 
   if (sleepData.length === 0) {
     return (
-      <Card className="col-span-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Moon className="h-5 w-5" />
-            Slaapanalyse (afgelopen 30 dagen)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-8">
-          <div className="text-center space-y-3">
-            <Moon className="h-12 w-12 mx-auto text-muted-foreground/50" />
-            <p className="text-muted-foreground">
-              Nog geen slaapdata beschikbaar voor de afgelopen 30 dagen.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Sync je Fitbit op de Profiel pagina om slaapdata te laden.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Slaapanalyse
+        </h2>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <Moon className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Geen slaapdata voor afgelopen 30 dagen
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 
-  // Prepare chart data
   const chartData = sleepData.map(item => ({
     date: format(new Date(item.date), 'd MMM', { locale: nl }),
     hours: item.duration_minutes ? Math.round(item.duration_minutes / 60 * 10) / 10 : 0,
@@ -124,142 +118,155 @@ export default function SleepAnalysis() {
   }));
 
   return (
-    <Card className="col-span-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Moon className="h-5 w-5" />
-          Slaapanalyse (afgelopen 30 dagen)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Gem. Slaapscore</p>
-            <p className="text-2xl font-bold flex items-center gap-1">
-              {stats.avgScore}
-              <span className="text-sm text-muted-foreground">/100</span>
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Gem. Slaapuren</p>
-            <p className="text-2xl font-bold flex items-center gap-1">
-              {stats.avgHours}
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </p>
-          </div>
-
-          {stats.bestNight && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Beste Nacht
-              </p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                {stats.bestNight.score}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(stats.bestNight.date), 'd MMM', { locale: nl })}
+    <section className="space-y-3">
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        Slaapanalyse (30 dagen)
+      </h2>
+      <Card>
+        <CardContent className="p-4 space-y-5">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground mb-1">Gem. Score</p>
+              <p className="text-xl font-semibold tabular-nums">
+                {stats.avgScore}
+                <span className="text-xs text-muted-foreground ml-1">/100</span>
               </p>
             </div>
-          )}
 
-          {stats.worstNight && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <TrendingDown className="h-3 w-3" />
-                Slechtste Nacht
-              </p>
-              <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                {stats.worstNight.score}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(stats.worstNight.date), 'd MMM', { locale: nl })}
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground mb-1">Gem. Slaap</p>
+              <p className="text-xl font-semibold tabular-nums flex items-center gap-1">
+                {stats.avgHours}
+                <span className="text-xs text-muted-foreground">u</span>
               </p>
             </div>
-          )}
-        </div>
 
-        {/* Sleep Hours Chart */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Slaapuren per Nacht</h4>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-                label={{ value: 'Uren', angle: -90, position: 'insideLeft', fontSize: 12 }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }}
-                formatter={(value: number) => [`${value} uur`, 'Slaapduur']}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="hours" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))', r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+            {stats.bestNight && (
+              <div className="p-3 rounded-lg bg-success/10">
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-success" />
+                  Beste
+                </p>
+                <p className="text-xl font-semibold tabular-nums text-success">
+                  {stats.bestNight.score}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {format(new Date(stats.bestNight.date), 'd MMM', { locale: nl })}
+                </p>
+              </div>
+            )}
 
-        {/* Sleep Score Chart */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Slaapscore per Nacht</h4>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-                domain={[0, 100]}
-                label={{ value: 'Score', angle: -90, position: 'insideLeft', fontSize: 12 }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }}
-                formatter={(value: number) => [`${value}/100`, 'Slaapscore']}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="score" 
-                stroke="hsl(var(--secondary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--secondary))', r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+            {stats.worstNight && (
+              <div className="p-3 rounded-lg bg-secondary/10">
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3 text-secondary" />
+                  Slechtste
+                </p>
+                <p className="text-xl font-semibold tabular-nums text-secondary">
+                  {stats.worstNight.score}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {format(new Date(stats.worstNight.date), 'd MMM', { locale: nl })}
+                </p>
+              </div>
+            )}
+          </div>
 
-        <div className="pt-2 border-t">
-          <p className="text-xs text-muted-foreground">
-            Gebaseerd op {sleepData.length} nachten slaapdata uit de afgelopen 30 dagen
+          {/* Sleep Hours Chart */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground">Slaapuren</h4>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={chartData}>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.5}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={30}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value} uur`, 'Slaapduur']}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="hours" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: 'hsl(var(--primary))' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Sleep Score Chart */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground">Slaapscore</h4>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={chartData}>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.5}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  domain={[0, 100]}
+                  axisLine={false}
+                  tickLine={false}
+                  width={30}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value}/100`, 'Score']}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="hsl(var(--secondary))" 
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: 'hsl(var(--secondary))' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <p className="text-[10px] text-muted-foreground text-center pt-2 border-t border-border/50">
+            Gebaseerd op {sleepData.length} nachten
           </p>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </section>
   );
 }

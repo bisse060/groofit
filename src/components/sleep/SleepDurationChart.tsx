@@ -30,15 +30,37 @@ export function SleepDurationChart({ logs }: SleepDurationChartProps) {
     <div className="h-64">
       <ResponsiveContainer>
         <LineChart data={last30}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-          <XAxis dataKey="date" className="text-xs" />
-          <YAxis tickFormatter={(v) => `${v}u`} className="text-xs" />
-          <Tooltip />
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke="hsl(var(--border))" 
+            opacity={0.5}
+          />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={false}
+          />
+          <YAxis 
+            tickFormatter={(v) => `${v}u`} 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px',
+            }}
+          />
           <Line
             dataKey="hours"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
             dot={false}
+            activeDot={{ r: 4, fill: 'hsl(var(--primary))' }}
           />
         </LineChart>
       </ResponsiveContainer>

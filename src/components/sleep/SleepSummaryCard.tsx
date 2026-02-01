@@ -18,32 +18,34 @@ export function SleepSummaryCard({ log }: SleepSummaryCardProps) {
     if (!minutes) return '0u 0m';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}u ${mins}m`;
+    return (
+      <>
+        {hours}<span className="text-muted-foreground">u </span>
+        {mins}<span className="text-muted-foreground">m</span>
+      </>
+    );
   };
+
+  const stats = [
+    { label: 'Duur', value: formatDuration(log.duration_minutes) },
+    { label: 'Score', value: log.score ?? '—' },
+    { label: 'Deep + REM', value: formatDuration((log.deep_minutes ?? 0) + (log.rem_minutes ?? 0)) },
+    { label: 'Wakker', value: formatDuration(log.wake_minutes) },
+  ];
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Laatste nacht</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Laatste nacht</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div>
-          <p className="text-xs text-muted-foreground">Duur</p>
-          <p className="text-lg font-semibold">{formatDuration(log.duration_minutes)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Score</p>
-          <p className="text-lg font-semibold">{log.score ?? '—'}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Deep + REM</p>
-          <p className="text-lg font-semibold">
-            {formatDuration((log.deep_minutes ?? 0) + (log.rem_minutes ?? 0))}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Wake</p>
-          <p className="text-lg font-semibold">{formatDuration(log.wake_minutes)}</p>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((stat, index) => (
+            <div key={index}>
+              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
+              <p className="text-lg font-semibold tabular-nums">{stat.value}</p>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
