@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { TrendingDown, TrendingUp, Minus, Scale, Ruler } from 'lucide-react';
 
 interface ProgressData {
   weightChange: number | null;
@@ -74,33 +74,27 @@ export default function ProgressIndicator() {
     return Minus;
   };
 
-  const getChangeColor = (change: number | null, inverse: boolean = false) => {
+  const getChangeColor = (change: number | null) => {
     if (change === null) return 'text-muted-foreground';
-    // For weight and waist, decrease is generally positive (hence inverse)
-    if (inverse) {
-      if (change < 0) return 'text-success';
-      if (change > 0) return 'text-secondary';
-    } else {
-      if (change > 0) return 'text-success';
-      if (change < 0) return 'text-secondary';
-    }
+    if (change < 0) return 'text-success';
+    if (change > 0) return 'text-secondary';
     return 'text-muted-foreground';
   };
 
   const formatChange = (change: number | null, unit: string) => {
     if (change === null) return '-';
     const prefix = change > 0 ? '+' : '';
-    return `${prefix}${change.toFixed(1)} ${unit}`;
+    return `${prefix}${change.toFixed(1)}`;
   };
 
   if (loading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Voortgang</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground">Laden...</div>
+        <CardContent className="p-4">
+          <div className="animate-pulse space-y-3">
+            <div className="h-4 bg-muted rounded w-1/3" />
+            <div className="h-16 bg-muted rounded" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -109,12 +103,15 @@ export default function ProgressIndicator() {
   if (progress.weightChange === null && progress.waistChange === null) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Voortgang</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Voeg minimaal 2 metingen toe in de laatste 60 dagen om je voortgang te zien.
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 rounded-lg bg-success/10">
+              <TrendingUp className="h-4 w-4 text-success" />
+            </div>
+            <p className="text-sm font-medium">Voortgang</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Voeg 2+ metingen toe om voortgang te zien
           </p>
         </CardContent>
       </Card>
@@ -126,40 +123,52 @@ export default function ProgressIndicator() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Voortgang</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Laatste {progress.daysSpan} dagen
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {progress.weightChange !== null && (
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <WeightIcon className={`h-5 w-5 ${getChangeColor(progress.weightChange, true)}`} />
-              <div>
-                <p className="text-sm font-medium">Gewicht</p>
-                <p className={`text-lg font-bold ${getChangeColor(progress.weightChange, true)}`}>
-                  {formatChange(progress.weightChange, 'kg')}
-                </p>
-              </div>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-success/10">
+              <TrendingUp className="h-4 w-4 text-success" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Voortgang</p>
+              <p className="text-xs text-muted-foreground">{progress.daysSpan} dagen</p>
             </div>
           </div>
-        )}
+        </div>
         
-        {progress.waistChange !== null && (
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <WaistIcon className={`h-5 w-5 ${getChangeColor(progress.waistChange, true)}`} />
-              <div>
-                <p className="text-sm font-medium">Taille</p>
-                <p className={`text-lg font-bold ${getChangeColor(progress.waistChange, true)}`}>
-                  {formatChange(progress.waistChange, 'cm')}
-                </p>
+        <div className="space-y-3">
+          {progress.weightChange !== null && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Gewicht</span>
+              </div>
+              <div className={`flex items-center gap-1 ${getChangeColor(progress.weightChange)}`}>
+                <WeightIcon className="h-4 w-4" />
+                <span className="font-semibold tabular-nums">
+                  {formatChange(progress.weightChange, 'kg')}
+                </span>
+                <span className="text-xs text-muted-foreground">kg</span>
               </div>
             </div>
-          </div>
-        )}
+          )}
+          
+          {progress.waistChange !== null && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ruler className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Taille</span>
+              </div>
+              <div className={`flex items-center gap-1 ${getChangeColor(progress.waistChange)}`}>
+                <WaistIcon className="h-4 w-4" />
+                <span className="font-semibold tabular-nums">
+                  {formatChange(progress.waistChange, 'cm')}
+                </span>
+                <span className="text-xs text-muted-foreground">cm</span>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -2,96 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Modern Fitness App Design System
+   All colors MUST be HSL.
+   Mobile-first, premium look, dark mode optimized.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
+    /* Background - clean white with slight warmth */
+    --background: 0 0% 98%;
+    --foreground: 240 10% 10%;
 
+    /* Cards - pure white with subtle elevation */
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
+    --popover-foreground: 240 10% 10%;
 
-    /* Fitness blue-green primary */
-    --primary: 187 85% 43%;
+    /* Primary - Grofit teal/green */
+    --primary: 168 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 187 85% 38%;
+    --primary-hover: 168 76% 36%;
 
-    /* Energetic orange accent */
+    /* Secondary - warm orange accent */
     --secondary: 24 95% 53%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 13% 95%;
-    --muted-foreground: 220 9% 46%;
+    /* Muted - soft gray for backgrounds */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
+    /* Accent - same as secondary for consistency */
     --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    /* Destructive - clear red */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 187 85% 43%;
+    /* Borders - very subtle */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 168 76% 42%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Success green for achievements */
-    --success: 142 76% 36%;
+    /* Success - vibrant green */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(187 85% 43%), hsl(187 85% 53%));
-    --gradient-secondary: linear-gradient(135deg, hsl(24 95% 53%), hsl(24 95% 63%));
-    --gradient-hero: linear-gradient(135deg, hsl(187 85% 43%) 0%, hsl(187 85% 53%) 100%);
+    /* Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(220 13% 13% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 13% 13% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(220 13% 13% / 0.1);
-    --shadow-glow: 0 0 30px hsl(187 85% 43% / 0.3);
+    /* Shadows - soft and layered */
+    --shadow-xs: 0 1px 2px 0 hsl(240 10% 10% / 0.03);
+    --shadow-sm: 0 1px 3px 0 hsl(240 10% 10% / 0.04), 0 1px 2px -1px hsl(240 10% 10% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(240 10% 10% / 0.05), 0 2px 4px -2px hsl(240 10% 10% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(240 10% 10% / 0.06), 0 4px 6px -4px hsl(240 10% 10% / 0.06);
+    --shadow-card: 0 1px 3px 0 hsl(240 10% 10% / 0.03), 0 1px 2px 0 hsl(240 10% 10% / 0.02);
 
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 220 13% 9%;
-    --foreground: 0 0% 98%;
+    /* Background - deep dark, not pure black */
+    --background: 240 10% 6%;
+    --foreground: 0 0% 95%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 0 0% 98%;
+    /* Cards - slightly elevated from background */
+    --card: 240 10% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 10% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 187 85% 43%;
+    /* Primary - slightly brighter for dark mode */
+    --primary: 168 72% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 187 85% 48%;
+    --primary-hover: 168 72% 54%;
 
-    --secondary: 24 95% 53%;
+    /* Secondary */
+    --secondary: 24 90% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 13% 15%;
-    --muted-foreground: 220 9% 60%;
+    /* Muted - dark gray */
+    --muted: 240 6% 14%;
+    --muted-foreground: 240 5% 55%;
 
-    --accent: 24 95% 53%;
+    /* Accent */
+    --accent: 24 90% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    /* Destructive */
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 187 85% 43%;
+    /* Borders - subtle in dark */
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 168 72% 48%;
 
-    --success: 142 76% 36%;
+    /* Success */
+    --success: 142 71% 50%;
     --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Shadows - more subtle in dark mode */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.25), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.25);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.35), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --shadow-card: none;
   }
 }
 
@@ -100,7 +129,98 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    font-size: 15px;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove default button styles on iOS */
+  button {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  /* Modern card style - no border, subtle shadow */
+  .card-modern {
+    @apply bg-card rounded-xl border-0;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Interactive card hover effect */
+  .card-interactive {
+    @apply transition-all duration-200;
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-interactive:active {
+    transform: scale(0.98);
+  }
+
+  /* Stat card specific styling */
+  .stat-card {
+    @apply bg-card rounded-xl p-4 space-y-2;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Section spacing */
+  .section-spacing {
+    @apply space-y-6;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply p-4 md:p-6 pb-24 md:pb-6;
+  }
+
+  /* Bottom nav safe area */
+  .bottom-nav-spacer {
+    @apply h-20 md:h-0;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }

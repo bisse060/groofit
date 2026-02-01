@@ -37,15 +37,63 @@ export function SleepPhasesChart({ logs }: SleepPhasesChartProps) {
     <div className="h-64">
       <ResponsiveContainer>
         <BarChart data={last30}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-          <XAxis dataKey="date" className="text-xs" />
-          <YAxis tickFormatter={(v) => `${v}m`} className="text-xs" />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="deep" stackId="a" fill="hsl(var(--primary))" />
-          <Bar dataKey="rem" stackId="a" fill="hsl(var(--secondary))" />
-          <Bar dataKey="light" stackId="a" fill="hsl(var(--muted-foreground))" opacity={0.4} />
-          <Bar dataKey="wake" stackId="a" fill="hsl(var(--destructive))" opacity={0.6} />
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke="hsl(var(--border))" 
+            opacity={0.5}
+            vertical={false}
+          />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={false}
+          />
+          <YAxis 
+            tickFormatter={(v) => `${v}m`} 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px',
+            }}
+          />
+          <Legend 
+            wrapperStyle={{ fontSize: '11px' }}
+          />
+          <Bar 
+            dataKey="deep" 
+            name="Deep" 
+            stackId="a" 
+            fill="hsl(var(--primary))" 
+            radius={[0, 0, 0, 0]}
+          />
+          <Bar 
+            dataKey="rem" 
+            name="REM" 
+            stackId="a" 
+            fill="hsl(var(--secondary))" 
+          />
+          <Bar 
+            dataKey="light" 
+            name="Light" 
+            stackId="a" 
+            fill="hsl(var(--muted-foreground))" 
+            opacity={0.3}
+          />
+          <Bar 
+            dataKey="wake" 
+            name="Wake" 
+            stackId="a" 
+            fill="hsl(var(--destructive))" 
+            opacity={0.5}
+            radius={[4, 4, 0, 0]}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>

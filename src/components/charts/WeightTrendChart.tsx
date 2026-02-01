@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
+import { TrendingUp } from 'lucide-react';
 
 interface WeightData {
   date: string;
@@ -64,12 +65,12 @@ export default function WeightTrendChart() {
   if (loading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Gewichtsverloop</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            Laden...
+        <CardContent className="p-4">
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="animate-pulse space-y-3 w-full">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-[160px] bg-muted rounded" />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -79,12 +80,17 @@ export default function WeightTrendChart() {
   if (filteredData.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Gewichtsverloop</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            Geen gewichtsmetingen gevonden voor deze periode
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <p className="text-sm font-medium">Gewicht</p>
+          </div>
+          <div className="h-[160px] flex items-center justify-center">
+            <p className="text-sm text-muted-foreground text-center">
+              Geen metingen voor deze periode
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -93,28 +99,45 @@ export default function WeightTrendChart() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Gewichtsverloop</CardTitle>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="30">30 dagen</TabsTrigger>
-            <TabsTrigger value="60">60 dagen</TabsTrigger>
-            <TabsTrigger value="90">90 dagen</TabsTrigger>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-base">Gewicht</CardTitle>
+          </div>
+        </div>
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="w-full mt-2">
+          <TabsList className="grid w-full grid-cols-3 h-8">
+            <TabsTrigger value="30" className="text-xs">30d</TabsTrigger>
+            <TabsTrigger value="60" className="text-xs">60d</TabsTrigger>
+            <TabsTrigger value="90" className="text-xs">90d</TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="pt-2">
+        <ResponsiveContainer width="100%" height={180}>
           <LineChart data={filteredData}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="hsl(var(--border))"
+              opacity={0.5}
+              vertical={false}
+            />
             <XAxis 
               dataKey="date" 
               tickFormatter={(date) => format(new Date(date), 'dd/MM')}
-              className="text-muted-foreground"
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickLine={false}
             />
             <YAxis 
               domain={['dataMin - 1', 'dataMax + 1']}
-              className="text-muted-foreground"
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              width={35}
             />
             <Tooltip 
               labelFormatter={(date) => format(new Date(date), 'dd MMM yyyy')}
@@ -122,7 +145,8 @@ export default function WeightTrendChart() {
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: 'var(--radius)',
+                borderRadius: '8px',
+                fontSize: '12px',
               }}
             />
             <Line 
@@ -130,8 +154,8 @@ export default function WeightTrendChart() {
               dataKey="weight" 
               stroke="hsl(var(--primary))" 
               strokeWidth={2}
-              dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-              activeDot={{ r: 6 }}
+              dot={false}
+              activeDot={{ r: 4, fill: 'hsl(var(--primary))' }}
             />
           </LineChart>
         </ResponsiveContainer>
