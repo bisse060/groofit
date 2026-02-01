@@ -279,126 +279,122 @@ export default function Comparisons() {
             </div>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 {first && second ? (
-                  <div className="space-y-6">
-                    <div className="overflow-x-auto">
-                      <div className="flex gap-4 pb-4">
-                        {/* First Measurement Card */}
-                        <Card className="flex-shrink-0 w-80">
-                          <CardContent className="p-4 space-y-3">
-                            <div className="text-center">
-                              <h3 className="font-semibold text-lg">
-                                {format(new Date(first.measurement_date), 'dd MMM yyyy')}
-                              </h3>
-                            </div>
+                  <div className="space-y-4">
+                    {/* Photo Type Navigation */}
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handlePreviousPhoto}
+                        className="h-8 w-8"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="font-semibold min-w-[100px] text-center">
+                        {photoTypeLabels[currentPhotoType]}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleNextPhoto}
+                        className="h-8 w-8"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-                            <div className="flex justify-center">
-                              {(() => {
-                                const photo = getPhotoByType(firstPhotos, currentPhotoType);
-                                return photo ? (
-                                  <WatermarkedImage 
-                                    src={photo} 
-                                    alt={currentPhotoType}
-                                    className="w-full max-w-[200px] aspect-[5/16] object-contain rounded bg-muted"
-                                  />
-                                ) : (
-                                  <div className="w-full max-w-[200px] aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                                    <p className="text-sm text-muted-foreground">Geen foto beschikbaar</p>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            <div className="space-y-2 text-sm">
-                              {comparisonFields.map((field) => {
-                                const value = first[field.key as keyof Measurement] as number | null;
-                                if (value === null) return null;
-                                return (
-                                  <div key={field.key} className="flex justify-between">
-                                    <span className="text-muted-foreground">{field.label}:</span>
-                                    <span className="font-medium">{value} {field.unit}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Navigation Controls */}
-                        <div className="flex flex-col items-center justify-center gap-4 px-4">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handlePreviousPhoto}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <div className="text-center min-w-[120px]">
-                            <h3 className="font-semibold text-sm">
-                              {photoTypeLabels[currentPhotoType]}
-                            </h3>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handleNextPhoto}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                    {/* Photos side by side */}
+                    <div className="grid grid-cols-2 gap-2 md:gap-4">
+                      {/* First Measurement */}
+                      <div className="space-y-2">
+                        <div className="text-center">
+                          <h3 className="font-semibold text-xs md:text-sm">
+                            {format(new Date(first.measurement_date), 'dd MMM yyyy')}
+                          </h3>
                         </div>
-
-                        {/* Second Measurement Card */}
-                        <Card className="flex-shrink-0 w-80">
-                          <CardContent className="p-4 space-y-3">
-                            <div className="text-center">
-                              <h3 className="font-semibold text-lg">
-                                {format(new Date(second.measurement_date), 'dd MMM yyyy')}
-                              </h3>
-                            </div>
-
-                            <div className="flex justify-center">
-                              {(() => {
-                                const photo = getPhotoByType(secondPhotos, currentPhotoType);
-                                return photo ? (
-                                  <WatermarkedImage 
-                                    src={photo} 
-                                    alt={currentPhotoType}
-                                    className="w-full max-w-[200px] aspect-[5/16] object-contain rounded bg-muted"
-                                  />
-                                ) : (
-                                  <div className="w-full max-w-[200px] aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                                    <p className="text-sm text-muted-foreground">Geen foto beschikbaar</p>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            <div className="space-y-2 text-sm">
-                              {comparisonFields.map((field) => {
-                                const value = second[field.key as keyof Measurement] as number | null;
-                                const firstValue = first[field.key as keyof Measurement] as number | null;
-                                const diff = calculateDifference(firstValue, value);
-                                const percentage = calculatePercentage(firstValue, value);
-                                if (value === null) return null;
-                                return (
-                                  <div key={field.key} className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">{field.label}:</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{value} {field.unit}</span>
-                                      {diff !== null && diff !== 0 && (
-                                        <span className={`text-xs ${getDifferenceColor(diff, field.key)}`}>
-                                          ({formatDifference(diff, percentage)})
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <div className="flex justify-center">
+                          {(() => {
+                            const photo = getPhotoByType(firstPhotos, currentPhotoType);
+                            return photo ? (
+                              <WatermarkedImage 
+                                src={photo} 
+                                alt={currentPhotoType}
+                                className="w-full aspect-[3/5] object-contain rounded bg-muted"
+                              />
+                            ) : (
+                              <div className="w-full aspect-[3/5] bg-muted rounded flex items-center justify-center">
+                                <p className="text-xs text-muted-foreground text-center px-2">Geen foto</p>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
+
+                      {/* Second Measurement */}
+                      <div className="space-y-2">
+                        <div className="text-center">
+                          <h3 className="font-semibold text-xs md:text-sm">
+                            {format(new Date(second.measurement_date), 'dd MMM yyyy')}
+                          </h3>
+                        </div>
+                        <div className="flex justify-center">
+                          {(() => {
+                            const photo = getPhotoByType(secondPhotos, currentPhotoType);
+                            return photo ? (
+                              <WatermarkedImage 
+                                src={photo} 
+                                alt={currentPhotoType}
+                                className="w-full aspect-[3/5] object-contain rounded bg-muted"
+                              />
+                            ) : (
+                              <div className="w-full aspect-[3/5] bg-muted rounded flex items-center justify-center">
+                                <p className="text-xs text-muted-foreground text-center px-2">Geen foto</p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Measurements comparison table */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-xs md:text-sm">
+                        <thead className="bg-muted">
+                          <tr>
+                            <th className="text-left p-2 font-medium">Meting</th>
+                            <th className="text-right p-2 font-medium">Eerste</th>
+                            <th className="text-right p-2 font-medium">Tweede</th>
+                            <th className="text-right p-2 font-medium">Verschil</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparisonFields.map((field) => {
+                            const firstValue = first[field.key as keyof Measurement] as number | null;
+                            const secondValue = second[field.key as keyof Measurement] as number | null;
+                            const diff = calculateDifference(firstValue, secondValue);
+                            if (firstValue === null && secondValue === null) return null;
+                            return (
+                              <tr key={field.key} className="border-t">
+                                <td className="p-2 text-muted-foreground">{field.label}</td>
+                                <td className="p-2 text-right">
+                                  {firstValue !== null ? `${firstValue}` : '-'}
+                                </td>
+                                <td className="p-2 text-right">
+                                  {secondValue !== null ? `${secondValue}` : '-'}
+                                </td>
+                                <td className={`p-2 text-right font-medium ${getDifferenceColor(diff, field.key)}`}>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <DifferenceIcon diff={diff} fieldKey={field.key} />
+                                    <span>{diff !== null ? (diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) : '-'}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 ) : (
