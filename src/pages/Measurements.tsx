@@ -389,6 +389,7 @@ export default function Measurements() {
                       step="0.1"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      placeholder={measurements[0]?.weight ? `Vorige: ${measurements[0].weight} kg` : undefined}
                     />
                   </div>
                   <div className="space-y-2">
@@ -399,6 +400,7 @@ export default function Measurements() {
                       step="0.1"
                       value={formData.shoulder_cm}
                       onChange={(e) => setFormData({ ...formData, shoulder_cm: e.target.value })}
+                      placeholder={measurements[0]?.shoulder_cm ? `Vorige: ${measurements[0].shoulder_cm} cm` : undefined}
                     />
                   </div>
                 </div>
@@ -412,6 +414,7 @@ export default function Measurements() {
                       step="0.1"
                       value={formData.chest_cm}
                       onChange={(e) => setFormData({ ...formData, chest_cm: e.target.value })}
+                      placeholder={measurements[0]?.chest_cm ? `Vorige: ${measurements[0].chest_cm} cm` : undefined}
                     />
                   </div>
                 </div>
@@ -425,6 +428,7 @@ export default function Measurements() {
                       step="0.1"
                       value={formData.waist_cm}
                       onChange={(e) => setFormData({ ...formData, waist_cm: e.target.value })}
+                      placeholder={measurements[0]?.waist_cm ? `Vorige: ${measurements[0].waist_cm} cm` : undefined}
                     />
                   </div>
                   <div className="space-y-2">
@@ -435,6 +439,7 @@ export default function Measurements() {
                       step="0.1"
                       value={formData.hips_cm}
                       onChange={(e) => setFormData({ ...formData, hips_cm: e.target.value })}
+                      placeholder={measurements[0]?.hips_cm ? `Vorige: ${measurements[0].hips_cm} cm` : undefined}
                     />
                   </div>
                 </div>
@@ -450,6 +455,7 @@ export default function Measurements() {
                       onChange={(e) =>
                         setFormData({ ...formData, bicep_left_cm: e.target.value })
                       }
+                      placeholder={measurements[0]?.bicep_left_cm ? `Vorige: ${measurements[0].bicep_left_cm} cm` : undefined}
                     />
                   </div>
                   <div className="space-y-2">
@@ -462,6 +468,7 @@ export default function Measurements() {
                       onChange={(e) =>
                         setFormData({ ...formData, bicep_right_cm: e.target.value })
                       }
+                      placeholder={measurements[0]?.bicep_right_cm ? `Vorige: ${measurements[0].bicep_right_cm} cm` : undefined}
                     />
                   </div>
                 </div>
