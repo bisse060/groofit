@@ -349,14 +349,15 @@ export default function Measurements() {
         />
       )}
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">{t('measurements.title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">Volg je lichaamsmetingen</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="self-start sm:self-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe meting
+          <Button size="sm" onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Nieuwe meting</span>
+            <span className="sm:hidden">Nieuw</span>
           </Button>
         </div>
 
