@@ -82,7 +82,7 @@ export default function Sleep() {
     return (
       <Layout>
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold">Slaapoverzicht</h1>
+          <h1 className="text-2xl font-semibold">Slaapoverzicht</h1>
           <Card>
             <CardContent className="pt-6">
               <p className="text-muted-foreground text-center">
@@ -98,7 +98,7 @@ export default function Sleep() {
   return (
     <Layout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Slaapoverzicht</h1>
+        <h1 className="text-2xl font-semibold">Slaapoverzicht</h1>
 
         <SleepSummaryCard log={latest} />
 

@@ -226,8 +226,8 @@ export default function Profile() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">{t('profile.title')}</h1>
-          <p className="text-muted-foreground">Manage your profile information</p>
+          <h1 className="text-2xl font-semibold">{t('profile.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Beheer je profielinformatie</p>
         </div>
 
         <Card>

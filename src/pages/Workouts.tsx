@@ -79,14 +79,14 @@ export default function Workouts() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Dumbbell className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Workouts</h1>
+            <Dumbbell className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-semibold">Workouts</h1>
           </div>
-          <Button onClick={createNewWorkout} size="lg">
-            <Plus className="h-5 w-5" />
+          <Button onClick={createNewWorkout} className="self-start sm:self-auto">
+            <Plus className="h-4 w-4 mr-2" />
             Nieuwe Workout
           </Button>
         </div>

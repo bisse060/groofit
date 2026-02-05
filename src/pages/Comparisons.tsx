@@ -233,8 +233,8 @@ export default function Comparisons() {
     <Layout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">{t('comparisons.title')}</h1>
-          <p className="text-muted-foreground">Compare two measurements to track your progress</p>
+          <h1 className="text-2xl font-semibold">{t('comparisons.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Vergelijk metingen om je voortgang te zien</p>
         </div>
 
         <Tabs defaultValue="comparison" className="w-full">

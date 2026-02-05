@@ -128,20 +128,23 @@ export default function ExerciseLibrary() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Dumbbell className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Exercise Library</h1>
+            <Dumbbell className="h-6 w-6 text-primary" />
+            <div>
+              <h1 className="text-2xl font-semibold">Oefeningen</h1>
+              <p className="text-sm text-muted-foreground mt-1 hidden sm:block">Je oefeningen bibliotheek</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowCsvDialog(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Importeer CSV
+          <div className="flex gap-2 self-start">
+            <Button variant="outline" size="sm" onClick={() => setShowCsvDialog(true)}>
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Importeer</span>
             </Button>
-            <Button onClick={() => navigate('/exercises/new')}>
-              <Plus className="h-5 w-5" />
-              Nieuwe Oefening
+            <Button size="sm" onClick={() => navigate('/exercises/new')}>
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nieuwe</span>
             </Button>
           </div>
         </div>
