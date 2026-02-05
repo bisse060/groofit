@@ -154,7 +154,8 @@ export default function Profile() {
   const handleConnectFitbit = async () => {
     setConnectingFitbit(true);
     try {
-      const redirectUrl = `${window.location.origin}/fitbit/callback`;
+      // Always use the published URL for Fitbit OAuth redirect
+      const redirectUrl = 'https://groofit.lovable.app/fitbit/callback';
       console.log('Calling fitbit-auth-start with redirectUrl:', redirectUrl);
       
       const { data, error } = await supabase.functions.invoke('fitbit-auth-start', {
