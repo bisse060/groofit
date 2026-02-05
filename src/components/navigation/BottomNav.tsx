@@ -1,19 +1,24 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Dumbbell, Camera, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Dumbbell, Camera, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-const navItems = [
+const baseNavItems = [
   { path: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
   { path: '/daily-logs', icon: FileText, labelKey: 'nav.dailyLogs' },
   { path: '/workouts', icon: Dumbbell, labelKey: 'nav.workouts' },
   { path: '/comparisons', icon: Camera, labelKey: 'nav.comparisons' },
-  { path: '/profile', icon: User, labelKey: 'nav.profile' },
 ];
 
 export default function BottomNav() {
   const location = useLocation();
   const { t } = useLanguage();
+  const { isAdmin } = useAuth();
+
+  const navItems = isAdmin 
+    ? [...baseNavItems, { path: '/admin', icon: Shield, labelKey: 'nav.admin' }]
+    : [...baseNavItems, { path: '/profile', icon: User, labelKey: 'nav.profile' }];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border safe-bottom">
