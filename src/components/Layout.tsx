@@ -50,10 +50,10 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden w-full">
       {/* Header - Compact and clean */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center">
             <img src={logoWide} alt="Grofit" className="h-8" />
           </Link>
@@ -99,7 +99,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Desktop Navigation - Hidden on mobile */}
       <nav className="hidden md:block sticky top-14 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
