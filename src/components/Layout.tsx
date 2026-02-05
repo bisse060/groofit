@@ -50,7 +50,7 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background w-screen max-w-[100vw] overflow-x-hidden">
+    <div className="min-h-screen bg-background w-full overflow-hidden">
       {/* Header - Fixed on mobile, sticky on desktop */}
       <header className="fixed md:sticky top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="px-4 h-14 flex items-center justify-between max-w-7xl mx-auto">
