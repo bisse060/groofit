@@ -50,10 +50,10 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden w-full">
-      {/* Header - Compact and clean */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div className="min-h-screen bg-background w-screen max-w-[100vw] overflow-x-hidden">
+      {/* Header - Fixed on mobile, sticky on desktop */}
+      <header className="fixed md:sticky top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
+        <div className="px-4 h-14 flex items-center justify-between max-w-7xl mx-auto">
           <Link to="/dashboard" className="flex items-center">
             <img src={logoWide} alt="Grofit" className="h-8" />
           </Link>
@@ -97,9 +97,12 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
+      {/* Spacer for fixed header on mobile */}
+      <div className="h-14 md:hidden" />
+
       {/* Desktop Navigation - Hidden on mobile */}
-      <nav className="hidden md:block sticky top-14 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4">
+      <nav className="hidden md:block sticky top-14 z-40 bg-background/95 backdrop-blur-lg border-b border-border/50">
+        <div className="px-4 max-w-7xl mx-auto">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
