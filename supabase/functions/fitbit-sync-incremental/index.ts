@@ -71,7 +71,7 @@ serve(async (req) => {
 
 // Fitbit allows 150 API calls/hour. Each day uses ~3 calls (activity + weight/fat + sleep).
 // So max ~50 days per hour to stay safe.
-const DAYS_PER_RUN = 50;
+const DAYS_PER_RUN = 25;
 
 async function processUserSync(supabaseAdmin: any, syncProgress: any) {
   const userId = syncProgress.user_id;
