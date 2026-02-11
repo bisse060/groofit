@@ -120,14 +120,16 @@ serve(async (req) => {
       oauth_verifier: oauth_verifier,
     };
 
-    // Access Token endpoint expects parameters (GET). Send as query string.
-    const signature = await signOAuth1Request('GET', accessTokenUrl, oauthParams, consumerSecret, requestTokenSecret);
+    // Send as POST with form-encoded body (consistent with request_token)
+    const signature = await signOAuth1Request('POST', accessTokenUrl, oauthParams, consumerSecret, requestTokenSecret);
 
-    const queryParams = new URLSearchParams(oauthParams);
-    queryParams.set('oauth_signature', signature);
+    const bodyParams = new URLSearchParams(oauthParams);
+    bodyParams.set('oauth_signature', signature);
 
-    const atResponse = await fetch(`${accessTokenUrl}?${queryParams.toString()}`, {
-      method: 'GET',
+    const atResponse = await fetch(accessTokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: bodyParams.toString(),
     });
 
     if (!atResponse.ok) {
