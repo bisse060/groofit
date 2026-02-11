@@ -22,6 +22,7 @@ import ExerciseDetail from "./pages/ExerciseDetail";
 import Admin from "./pages/Admin";
 import FitbitCallback from "./pages/FitbitCallback";
 import Nutrition from "./pages/Nutrition";
+import FatSecretCallback from "./pages/FatSecretCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/exercises/:id" element={<ExerciseDetail />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/fitbit/callback" element={<FitbitCallback />} />
+                <Route path="/fatsecret/callback" element={<FatSecretCallback />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>
