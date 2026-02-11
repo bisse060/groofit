@@ -228,10 +228,10 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('profile.title')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Beheer je profielinformatie</p>
+          <h1 className="text-xl font-semibold">{t('profile.title')}</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Beheer je profielinformatie</p>
         </div>
 
         <Card>

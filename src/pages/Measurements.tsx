@@ -348,11 +348,11 @@ export default function Measurements() {
           onCancel={() => setCropImage({ type: null, url: null })}
         />
       )}
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-3">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-semibold">{t('measurements.title')}</h1>
-            <p className="text-sm text-muted-foreground mt-1">Volg je lichaamsmetingen</p>
+            <h1 className="text-xl font-semibold">{t('measurements.title')}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Volg je lichaamsmetingen</p>
           </div>
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4" />
