@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera } from 'lucide-react';
+import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ const baseNavItems = [
 ];
 
 const moreItems = [
+  { path: '/nutrition', icon: UtensilsCrossed, labelKey: 'nav.nutrition' },
   { path: '/profile', icon: User, labelKey: 'nav.profile' },
   { path: '/measurements', icon: Ruler, labelKey: 'nav.measurements' },
   { path: '/comparisons', icon: GitCompare, labelKey: 'nav.comparisons' },

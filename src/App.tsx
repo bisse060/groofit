@@ -21,6 +21,7 @@ import ExerciseLibrary from "./pages/ExerciseLibrary";
 import ExerciseDetail from "./pages/ExerciseDetail";
 import Admin from "./pages/Admin";
 import FitbitCallback from "./pages/FitbitCallback";
+import Nutrition from "./pages/Nutrition";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="/measurements" element={<Measurements />} />
                 <Route path="/comparisons" element={<Comparisons />} />
                 <Route path="/health" element={<Health />} />
+                <Route path="/nutrition" element={<Nutrition />} />
                 <Route path="/sleep" element={<Sleep />} />
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/workouts/:id" element={<WorkoutDetail />} />
