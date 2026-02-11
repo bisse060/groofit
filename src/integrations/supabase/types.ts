@@ -677,7 +677,10 @@ export type Database = {
           date: string
           end_time: string | null
           id: string
+          is_template: boolean
           notes: string | null
+          photo_url: string | null
+          rating: number | null
           start_time: string | null
           title: string | null
           updated_at: string | null
@@ -688,7 +691,10 @@ export type Database = {
           date?: string
           end_time?: string | null
           id?: string
+          is_template?: boolean
           notes?: string | null
+          photo_url?: string | null
+          rating?: number | null
           start_time?: string | null
           title?: string | null
           updated_at?: string | null
@@ -699,7 +705,10 @@ export type Database = {
           date?: string
           end_time?: string | null
           id?: string
+          is_template?: boolean
           notes?: string | null
+          photo_url?: string | null
+          rating?: number | null
           start_time?: string | null
           title?: string | null
           updated_at?: string | null
