@@ -13,6 +13,7 @@ import { ArrowDown, ArrowUp, Minus, ChevronLeft, ChevronRight } from 'lucide-rea
 import TimelineView from '@/components/comparisons/TimelineView';
 import { useNavigate } from 'react-router-dom';
 import WatermarkedImage from '@/components/WatermarkedImage';
+import { signPhotoUrls } from '@/lib/storage-utils';
 
 interface Measurement {
   id: string;
@@ -109,8 +110,9 @@ export default function Comparisons() {
 
       if (error) throw error;
 
+      const signedData = data ? await signPhotoUrls(data) : [];
       const photosMap: Record<string, ProgressPhoto[]> = {};
-      data?.forEach(photo => {
+      signedData.forEach(photo => {
         if (!photosMap[photo.measurement_id]) {
           photosMap[photo.measurement_id] = [];
         }
@@ -132,7 +134,8 @@ export default function Comparisons() {
         .order('photo_type');
 
       if (error) throw error;
-      setPhotos(data || []);
+      const signedPhotos = data ? await signPhotoUrls(data) : [];
+      setPhotos(signedPhotos);
     } catch (error: any) {
       toast.error(error.message);
     }
