@@ -235,11 +235,11 @@ export default function DailyLogs() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-semibold">{t('logs.title')}</h1>
-            <p className="text-sm text-muted-foreground mt-1">Track je dagelijkse activiteiten</p>
+            <h1 className="text-xl font-semibold">{t('logs.title')}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Track je dagelijkse activiteiten</p>
           </div>
           {fitbitConnected && (
             <Button
@@ -255,7 +255,7 @@ export default function DailyLogs() {
           )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Log Entry</CardTitle>

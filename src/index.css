@@ -189,18 +189,18 @@
 
   /* Stat card specific styling */
   .stat-card {
-    @apply bg-card rounded-xl p-4 space-y-2;
+    @apply bg-card rounded-xl p-3 space-y-1.5;
     box-shadow: var(--shadow-card);
   }
 
   /* Section spacing */
   .section-spacing {
-    @apply space-y-6;
+    @apply space-y-4;
   }
 
   /* Page container */
   .page-container {
-    @apply p-4 md:p-6 pb-24 md:pb-6;
+    @apply p-3 md:p-5 pb-20 md:pb-5;
     width: 100%;
     max-width: 100%;
   }
@@ -212,7 +212,7 @@
 
   /* Bottom nav safe area */
   .bottom-nav-spacer {
-    @apply h-20 md:h-0;
+    @apply h-16 md:h-0;
   }
 }
 

@@ -92,24 +92,24 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-4">
         {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-semibold">{t('nav.dashboard')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Je fitness overzicht van vandaag</p>
+          <h1 className="text-xl font-semibold">{t('nav.dashboard')}</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Je fitness overzicht van vandaag</p>
         </div>
 
         {/* Today Overview - Primary Stats */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Vandaag</h2>
-          <div className="grid grid-cols-2 gap-3">
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vandaag</h2>
+          <div className="grid grid-cols-2 gap-2">
             {/* Steps */}
             <Card className="card-interactive">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Stappen</p>
-                    <p className="text-2xl font-semibold tabular-nums">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">Stappen</p>
+                    <p className="text-xl font-semibold tabular-nums">
                       {stats.todaySteps.toLocaleString()}
                     </p>
                   </div>
@@ -122,11 +122,11 @@ export default function Dashboard() {
 
             {/* Weekly Workouts */}
             <Card className="card-interactive">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Workouts (7d)</p>
-                    <p className="text-2xl font-semibold tabular-nums">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">Workouts (7d)</p>
+                    <p className="text-xl font-semibold tabular-nums">
                       {stats.weekWorkouts}
                     </p>
                   </div>
@@ -139,11 +139,11 @@ export default function Dashboard() {
 
             {/* Current Weight */}
             <Card className="card-interactive">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Huidig gewicht</p>
-                    <p className="text-2xl font-semibold tabular-nums">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">Huidig gewicht</p>
+                    <p className="text-xl font-semibold tabular-nums">
                       {stats.currentWeight ? `${stats.currentWeight}` : '-'}
                       {stats.currentWeight > 0 && <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>}
                     </p>
@@ -157,11 +157,11 @@ export default function Dashboard() {
 
             {/* Target Weight */}
             <Card className="card-interactive">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Doelgewicht</p>
-                    <p className="text-2xl font-semibold tabular-nums">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">Doelgewicht</p>
+                    <p className="text-xl font-semibold tabular-nums">
                       {stats.targetWeight ? `${stats.targetWeight}` : '-'}
                       {stats.targetWeight > 0 && <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>}
                     </p>
@@ -176,8 +176,8 @@ export default function Dashboard() {
         </section>
 
         {/* Quick Actions */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Snelle acties</h2>
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Snelle acties</h2>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             <Button asChild variant="outline" size="sm" className="flex-shrink-0 gap-2">
               <Link to="/workouts">
@@ -207,9 +207,9 @@ export default function Dashboard() {
         </section>
 
         {/* Progress Section */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Voortgang</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Voortgang</h2>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <WeightTrendChart />
             <ProgressIndicator />
             <SleepSummaryCard />

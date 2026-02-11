@@ -79,11 +79,11 @@ export default function Workouts() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Dumbbell className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-semibold">Workouts</h1>
+      <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-semibold">Workouts</h1>
           </div>
           <Button onClick={createNewWorkout} className="self-start sm:self-auto">
             <Plus className="h-4 w-4 mr-2" />
@@ -114,7 +114,7 @@ export default function Workouts() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-2">
             {workouts.map((workout) => (
               <Card
                 key={workout.id}
