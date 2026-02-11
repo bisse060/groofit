@@ -67,6 +67,19 @@ export default function Workouts() {
 
       if (workoutError) throw workoutError;
 
+      // Auto-close workouts older than 10 hours
+      const staleWorkouts = (workoutData || []).filter(w => {
+        if (w.end_time || !w.start_time) return false;
+        const hoursSinceStart = differenceInMinutes(new Date(), new Date(w.start_time)) / 60;
+        return hoursSinceStart >= 10;
+      });
+
+      for (const sw of staleWorkouts) {
+        const autoEndTime = new Date(new Date(sw.start_time!).getTime() + 10 * 60 * 60 * 1000).toISOString();
+        await supabase.from('workouts').update({ end_time: autoEndTime }).eq('id', sw.id);
+        sw.end_time = autoEndTime;
+      }
+
       // Load stats for recent workouts
       const workoutsWithStats = await Promise.all(
         (workoutData || []).map(async (w) => {
