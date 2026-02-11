@@ -28,7 +28,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { days = 365 } = await req.json();
+    const { days: rawDays = 365 } = await req.json();
+    const days = Math.max(1, Math.min(730, Number(rawDays) || 365));
 
     console.log(`Starting historical sync setup for ${days} days for user ${user.id}`);
 

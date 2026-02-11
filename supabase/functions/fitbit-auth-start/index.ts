@@ -32,6 +32,21 @@ serve(async (req) => {
     }
 
     const { redirectUrl } = await req.json();
+
+    // Validate redirectUrl against allowed domains
+    const allowedOrigins = [
+      Deno.env.get('SUPABASE_URL'),
+      'https://groofit.lovable.app',
+      'http://localhost:',
+      'https://id-preview--',
+    ];
+    if (!redirectUrl || !allowedOrigins.some(origin => origin && redirectUrl.startsWith(origin))) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid redirect URL' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Redirect URL received:', redirectUrl);
     
     const clientId = Deno.env.get('FITBIT_CLIENT_ID');

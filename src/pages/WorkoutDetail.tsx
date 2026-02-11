@@ -203,8 +203,9 @@ export default function WorkoutDetail() {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage.from('workout-photos').getPublicUrl(fileName);
-        photoUrl = urlData.publicUrl;
+        const { data: signedData, error: signedError } = await supabase.storage.from('workout-photos').createSignedUrl(fileName, 60 * 60 * 24 * 365);
+        if (signedError) throw signedError;
+        photoUrl = signedData.signedUrl;
       }
 
       // Update workout
