@@ -26,14 +26,14 @@ export default function SleepAnalysis() {
 
   const loadSleepAnalysis = async () => {
     try {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const { data, error } = await supabase
         .from('sleep_logs')
         .select('date, score, duration_minutes, efficiency')
         .eq('user_id', user?.id)
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+        .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: true });
 
       if (error) throw error;
@@ -102,7 +102,7 @@ export default function SleepAnalysis() {
                 <Moon className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                Geen slaapdata voor afgelopen 30 dagen
+                Geen slaapdata voor afgelopen 90 dagen
               </p>
             </div>
           </CardContent>
@@ -120,7 +120,7 @@ export default function SleepAnalysis() {
   return (
     <section className="space-y-3">
       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        Slaapanalyse (30 dagen)
+        Slaapanalyse (90 dagen)
       </h2>
       <Card>
         <CardContent className="p-4 space-y-5">
