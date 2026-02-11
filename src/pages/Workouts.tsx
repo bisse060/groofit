@@ -79,7 +79,7 @@ export default function Workouts() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Dumbbell className="h-6 w-6 text-primary" />
