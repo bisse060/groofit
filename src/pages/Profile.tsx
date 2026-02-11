@@ -14,6 +14,7 @@ import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
+import VersionInfo from '@/components/VersionInfo';
 
 export default function Profile() {
   const { user, loading: authLoading } = useAuth();
@@ -617,6 +618,7 @@ export default function Profile() {
             </form>
           </CardContent>
         </Card>
+        <VersionInfo />
       </div>
     </Layout>
   );
