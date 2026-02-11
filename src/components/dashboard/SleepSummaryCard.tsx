@@ -5,29 +5,48 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Moon, ChevronRight } from 'lucide-react';
 
+interface WeeklySleep {
+  avgDuration: number;
+  avgScore: number | null;
+  avgEfficiency: number | null;
+  nights: number;
+}
+
 export default function SleepSummaryCard() {
   const { user } = useAuth();
-  const [latestSleep, setLatestSleep] = useState<any>(null);
+  const [weekly, setWeekly] = useState<WeeklySleep | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadLatestSleep();
-    }
+    if (user) loadWeeklySleep();
   }, [user]);
 
-  const loadLatestSleep = async () => {
+  const loadWeeklySleep = async () => {
     try {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
       const { data, error } = await supabase
         .from('sleep_logs')
-        .select('score, duration_minutes')
+        .select('score, duration_minutes, efficiency')
         .eq('user_id', user?.id)
-        .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .gte('date', weekAgo.toISOString().split('T')[0])
+        .order('date', { ascending: false });
 
       if (error) throw error;
-      setLatestSleep(data);
+
+      if (data && data.length > 0) {
+        const durations = data.filter(d => d.duration_minutes != null).map(d => d.duration_minutes!);
+        const scores = data.filter(d => d.score != null).map(d => d.score!);
+        const efficiencies = data.filter(d => d.efficiency != null).map(d => d.efficiency!);
+
+        setWeekly({
+          avgDuration: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length),
+          avgScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+          avgEfficiency: efficiencies.length > 0 ? Math.round(efficiencies.reduce((a, b) => a + b, 0) / efficiencies.length) : null,
+          nights: data.length,
+        });
+      }
     } catch (error) {
       console.error('Error loading sleep data:', error);
     } finally {
@@ -48,15 +67,13 @@ export default function SleepSummaryCard() {
     );
   }
 
-  if (!latestSleep) {
-    return null;
-  }
+  if (!weekly) return null;
 
-  const hours = Math.floor((latestSleep.duration_minutes ?? 0) / 60);
-  const mins = (latestSleep.duration_minutes ?? 0) % 60;
+  const hours = Math.floor(weekly.avgDuration / 60);
+  const mins = weekly.avgDuration % 60;
 
   return (
-    <Link to="/sleep">
+    <Link to="/health">
       <Card className="card-interactive h-full">
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
@@ -66,23 +83,29 @@ export default function SleepSummaryCard() {
               </div>
               <div>
                 <p className="text-sm font-medium">Slaap</p>
-                <p className="text-xs text-muted-foreground">Laatste nacht</p>
+                <p className="text-xs text-muted-foreground">Gem. afgelopen {weekly.nights} nachten</p>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="flex items-end gap-6">
+          <div className="flex items-end gap-4 flex-wrap">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Duur</p>
-              <p className="text-2xl font-semibold tabular-nums">
+              <p className="text-xl font-semibold tabular-nums">
                 {hours}<span className="text-sm font-normal text-muted-foreground">u </span>
                 {mins}<span className="text-sm font-normal text-muted-foreground">m</span>
               </p>
             </div>
-            {latestSleep.score && (
+            {weekly.avgScore != null && (
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Score</p>
-                <p className="text-2xl font-semibold tabular-nums">{latestSleep.score}</p>
+                <p className="text-xl font-semibold tabular-nums">{weekly.avgScore}</p>
+              </div>
+            )}
+            {weekly.avgEfficiency != null && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Efficiëntie</p>
+                <p className="text-xl font-semibold tabular-nums">{weekly.avgEfficiency}%</p>
               </div>
             )}
           </div>

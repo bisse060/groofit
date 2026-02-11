@@ -4,61 +4,56 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingDown, TrendingUp, Minus, Scale, Ruler } from 'lucide-react';
 
-interface ProgressData {
-  weightChange: number | null;
-  waistChange: number | null;
-  daysSpan: number;
+interface MeasurementChange {
+  label: string;
+  change: number | null;
+  unit: string;
+  invertColor?: boolean; // true = decrease is good (weight, waist)
 }
 
 export default function ProgressIndicator() {
   const { user } = useAuth();
-  const [progress, setProgress] = useState<ProgressData>({
-    weightChange: null,
-    waistChange: null,
-    daysSpan: 0,
-  });
+  const [changes, setChanges] = useState<MeasurementChange[]>([]);
+  const [daysSpan, setDaysSpan] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadProgress();
-    }
+    if (user) loadProgress();
   }, [user]);
 
   const loadProgress = async () => {
     try {
-      const date60d = new Date();
-      date60d.setDate(date60d.getDate() - 60);
-
       const { data: measurements } = await supabase
         .from('measurements')
-        .select('measurement_date, weight, waist_cm')
+        .select('measurement_date, weight, waist_cm, shoulder_cm, chest_cm, hips_cm, bicep_left_cm, bicep_right_cm')
         .eq('user_id', user?.id)
-        .gte('measurement_date', date60d.toISOString().split('T')[0])
-        .order('measurement_date', { ascending: true });
+        .order('measurement_date', { ascending: false })
+        .limit(4);
 
       if (measurements && measurements.length >= 2) {
-        const first = measurements[0];
-        const last = measurements[measurements.length - 1];
-
-        const weightChange = first.weight && last.weight 
-          ? Number(last.weight) - Number(first.weight)
-          : null;
-
-        const waistChange = first.waist_cm && last.waist_cm
-          ? Number(last.waist_cm) - Number(first.waist_cm)
-          : null;
+        const latest = measurements[0];
+        const oldest = measurements[measurements.length - 1];
 
         const daysDiff = Math.round(
-          (new Date(last.measurement_date).getTime() - new Date(first.measurement_date).getTime()) 
+          (new Date(latest.measurement_date).getTime() - new Date(oldest.measurement_date).getTime())
           / (1000 * 60 * 60 * 24)
         );
+        setDaysSpan(daysDiff);
 
-        setProgress({
-          weightChange,
-          waistChange,
-          daysSpan: daysDiff,
-        });
+        const calc = (a: number | null, b: number | null) =>
+          a != null && b != null ? Number(a) - Number(b) : null;
+
+        const result: MeasurementChange[] = [
+          { label: 'Gewicht', change: calc(latest.weight, oldest.weight), unit: 'kg', invertColor: true },
+          { label: 'Schouders', change: calc(latest.shoulder_cm, oldest.shoulder_cm), unit: 'cm' },
+          { label: 'Borst', change: calc(latest.chest_cm, oldest.chest_cm), unit: 'cm' },
+          { label: 'Taille', change: calc(latest.waist_cm, oldest.waist_cm), unit: 'cm', invertColor: true },
+          { label: 'Heupen', change: calc(latest.hips_cm, oldest.hips_cm), unit: 'cm' },
+          { label: 'Bicep L', change: calc(latest.bicep_left_cm, oldest.bicep_left_cm), unit: 'cm' },
+          { label: 'Bicep R', change: calc(latest.bicep_right_cm, oldest.bicep_right_cm), unit: 'cm' },
+        ].filter(c => c.change !== null);
+
+        setChanges(result);
       }
     } catch (error) {
       console.error('Error loading progress:', error);
@@ -67,21 +62,18 @@ export default function ProgressIndicator() {
     }
   };
 
-  const getChangeIcon = (change: number | null) => {
-    if (change === null) return Minus;
-    if (change < 0) return TrendingDown;
-    if (change > 0) return TrendingUp;
-    return Minus;
+  const getChangeColor = (change: number | null, invert?: boolean) => {
+    if (change === null || change === 0) return 'text-muted-foreground';
+    const isPositiveGood = invert ? change < 0 : change > 0;
+    return isPositiveGood ? 'text-success' : 'text-secondary';
   };
 
-  const getChangeColor = (change: number | null) => {
-    if (change === null) return 'text-muted-foreground';
-    if (change < 0) return 'text-success';
-    if (change > 0) return 'text-secondary';
-    return 'text-muted-foreground';
+  const getIcon = (change: number | null) => {
+    if (change === null || change === 0) return Minus;
+    return change > 0 ? TrendingUp : TrendingDown;
   };
 
-  const formatChange = (change: number | null, unit: string) => {
+  const formatChange = (change: number | null) => {
     if (change === null) return '-';
     const prefix = change > 0 ? '+' : '';
     return `${prefix}${change.toFixed(1)}`;
@@ -100,7 +92,7 @@ export default function ProgressIndicator() {
     );
   }
 
-  if (progress.weightChange === null && progress.waistChange === null) {
+  if (changes.length === 0) {
     return (
       <Card>
         <CardContent className="p-4">
@@ -118,9 +110,6 @@ export default function ProgressIndicator() {
     );
   }
 
-  const WeightIcon = getChangeIcon(progress.weightChange);
-  const WaistIcon = getChangeIcon(progress.waistChange);
-
   return (
     <Card>
       <CardContent className="p-4">
@@ -131,43 +120,27 @@ export default function ProgressIndicator() {
             </div>
             <div>
               <p className="text-sm font-medium">Voortgang</p>
-              <p className="text-xs text-muted-foreground">{progress.daysSpan} dagen</p>
+              <p className="text-xs text-muted-foreground">{daysSpan} dagen</p>
             </div>
           </div>
         </div>
-        
-        <div className="space-y-3">
-          {progress.weightChange !== null && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Scale className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Gewicht</span>
+
+        <div className="space-y-2">
+          {changes.map((item) => {
+            const Icon = getIcon(item.change);
+            return (
+              <div key={item.label} className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{item.label}</span>
+                <div className={`flex items-center gap-1 ${getChangeColor(item.change, item.invertColor)}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="font-semibold tabular-nums text-sm">
+                    {formatChange(item.change)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">{item.unit}</span>
+                </div>
               </div>
-              <div className={`flex items-center gap-1 ${getChangeColor(progress.weightChange)}`}>
-                <WeightIcon className="h-4 w-4" />
-                <span className="font-semibold tabular-nums">
-                  {formatChange(progress.weightChange, 'kg')}
-                </span>
-                <span className="text-xs text-muted-foreground">kg</span>
-              </div>
-            </div>
-          )}
-          
-          {progress.waistChange !== null && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Ruler className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Taille</span>
-              </div>
-              <div className={`flex items-center gap-1 ${getChangeColor(progress.waistChange)}`}>
-                <WaistIcon className="h-4 w-4" />
-                <span className="font-semibold tabular-nums">
-                  {formatChange(progress.waistChange, 'cm')}
-                </span>
-                <span className="text-xs text-muted-foreground">cm</span>
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
