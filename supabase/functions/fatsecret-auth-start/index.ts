@@ -87,7 +87,7 @@ serve(async (req) => {
     }
 
     // Step 1: Get request token
-    const requestTokenUrl = 'https://www.fatsecret.com/oauth/request_token';
+    const requestTokenUrl = 'https://authentication.fatsecret.com/oauth/request_token';
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = generateNonce();
 
@@ -136,7 +136,7 @@ serve(async (req) => {
     });
 
     // Step 2: Return authorization URL
-    const authUrl = `https://www.fatsecret.com/oauth/authorize?oauth_token=${oauthToken}`;
+    const authUrl = `https://authentication.fatsecret.com/oauth/authorize?oauth_token=${oauthToken}`;
 
     return new Response(
       JSON.stringify({ authUrl }),
