@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dumbbell, Plus, Calendar, Clock, Star, Copy, Trash2, Weight } from 'lucide-react';
+import { Dumbbell, Plus, Calendar, Clock, Star, Copy, Trash2, Weight, Pencil } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 import { nl } from 'date-fns/locale/nl';
 import { toast } from 'sonner';
@@ -278,9 +278,15 @@ export default function Workouts() {
         </div>
 
         {/* Templates */}
-        {templates.length > 0 && (
+        {templates.length > 0 ? (
           <section className="space-y-2">
-            <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Routines</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Routines</h2>
+              <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => navigate('/routines/new')}>
+                <Plus className="h-3 w-3 mr-1" />
+                Nieuw
+              </Button>
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {templates.map(template => (
                 <Card key={template.id} className="card-interactive">
@@ -294,6 +300,9 @@ export default function Workouts() {
                         <Button size="sm" variant="default" onClick={() => startFromTemplate(template.id)} className="h-7 text-xs px-2">
                           <Plus className="h-3 w-3 mr-1" />
                           Start
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => navigate(`/routines/${template.id}`)}>
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -318,6 +327,14 @@ export default function Workouts() {
                 </Card>
               ))}
             </div>
+          </section>
+        ) : (
+          <section className="space-y-2">
+            <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Routines</h2>
+            <Button variant="outline" size="sm" onClick={() => navigate('/routines/new')} className="w-full">
+              <Plus className="h-4 w-4 mr-1" />
+              Nieuwe Routine
+            </Button>
           </section>
         )}
 
