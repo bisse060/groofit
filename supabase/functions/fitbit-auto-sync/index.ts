@@ -17,7 +17,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
   }
   const token = authHeader.replace('Bearer ', '');
-  if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') && token !== Deno.env.get('SUPABASE_ANON_KEY')) {
+  if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
   }
 
