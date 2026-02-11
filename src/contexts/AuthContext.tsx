@@ -99,8 +99,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      // Use local scope to clear session even if server-side logout fails
+      // (e.g., when session is already expired/invalid)
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      navigate('/auth');
+    }
   };
 
   return (
