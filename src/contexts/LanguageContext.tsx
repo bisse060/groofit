@@ -22,7 +22,7 @@ export const translations: Translations = {
   'nav.exercises': { nl: 'Oefeningen', en: 'Exercises' },
   'nav.progressPhotos': { nl: "Progressfoto's", en: 'Progress Photos' },
   'nav.admin': { nl: 'Admin', en: 'Admin' },
-  'nav.health': { nl: 'Gezondheid', en: 'Health' },
+  'nav.health': { nl: 'Health', en: 'Health' },
   'nav.logout': { nl: 'Uitloggen', en: 'Logout' },
   'nav.more': { nl: 'Meer', en: 'More' },
   
