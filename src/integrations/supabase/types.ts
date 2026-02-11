@@ -484,6 +484,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_tiers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          features: string[]
+          id: string
+          is_active: boolean | null
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          features?: string[]
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          features?: string[]
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -504,6 +543,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          starts_at: string | null
+          status: string
+          tier_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          starts_at?: string | null
+          status?: string
+          tier_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          starts_at?: string | null
+          status?: string
+          tier_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_exercises: {
         Row: {
