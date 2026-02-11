@@ -252,18 +252,11 @@ async function syncUserData(supabaseClient: any, userId: string, date: string) {
 
 async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
   const expiresAt = new Date(credentials.token_expires_at);
-  
-  // Try to decrypt the access token, fallback to using it directly if decryption fails
-  let accessToken = credentials.access_token;
-  try {
-    const { data: decryptedAccessToken } = await supabaseClient.rpc('decrypt_token', { 
-      encrypted_token: credentials.access_token 
-    });
-    if (decryptedAccessToken) {
-      accessToken = decryptedAccessToken;
-    }
-  } catch (error) {
-    console.log('Failed to decrypt access token, using stored value directly');
+  const accessToken = credentials.access_token;
+  const refreshToken = credentials.refresh_token;
+
+  if (!accessToken || !refreshToken) {
+    throw new Error('Fitbit tokens are missing. User needs to reconnect.');
   }
 
   // If token is still valid, return it
@@ -272,19 +265,6 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
   }
 
   console.log('Token expired, refreshing for user:', userId);
-  
-  // Try to decrypt refresh token, fallback to using it directly
-  let refreshToken = credentials.refresh_token;
-  try {
-    const { data: decryptedRefreshToken } = await supabaseClient.rpc('decrypt_token', { 
-      encrypted_token: credentials.refresh_token 
-    });
-    if (decryptedRefreshToken) {
-      refreshToken = decryptedRefreshToken;
-    }
-  } catch (error) {
-    console.log('Failed to decrypt refresh token, using stored value directly');
-  }
 
   const clientId = Deno.env.get('FITBIT_CLIENT_ID');
   const clientSecret = Deno.env.get('FITBIT_CLIENT_SECRET');
@@ -311,19 +291,11 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
   const tokenData = await refreshResponse.json();
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-  // Encrypt new tokens before storing
-  const { data: encryptedAccessToken } = await supabaseClient.rpc('encrypt_token', { 
-    token: tokenData.access_token 
-  });
-  const { data: encryptedRefreshToken } = await supabaseClient.rpc('encrypt_token', { 
-    token: tokenData.refresh_token 
-  });
-
   await supabaseClient
     .from('fitbit_credentials')
     .update({
-      access_token: encryptedAccessToken,
-      refresh_token: encryptedRefreshToken,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
       token_expires_at: newExpiresAt.toISOString(),
     })
     .eq('user_id', userId);
