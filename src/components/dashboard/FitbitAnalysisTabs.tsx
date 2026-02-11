@@ -18,9 +18,7 @@ export default function FitbitAnalysisTabs() {
   const checkFitbitConnection = async () => {
     try {
       const { data, error } = await supabase
-        .from('fitbit_credentials')
-        .select('id')
-        .eq('user_id', user?.id)
+        .rpc('get_fitbit_connection_status', { p_user_id: user?.id })
         .maybeSingle();
 
       if (!error && data) {

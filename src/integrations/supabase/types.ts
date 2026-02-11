@@ -723,6 +723,15 @@ export type Database = {
     Functions: {
       decrypt_token: { Args: { encrypted_token: string }; Returns: string }
       encrypt_token: { Args: { token: string }; Returns: string }
+      get_fitbit_connection_status: {
+        Args: { p_user_id: string }
+        Returns: {
+          connected_at: string
+          fitbit_user_id: string
+          id: string
+          last_sync_at: string
+        }[]
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
