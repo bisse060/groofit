@@ -24,6 +24,7 @@ export const translations: Translations = {
   'nav.admin': { nl: 'Admin', en: 'Admin' },
   'nav.health': { nl: 'Gezondheid', en: 'Health' },
   'nav.logout': { nl: 'Uitloggen', en: 'Logout' },
+  'nav.more': { nl: 'Meer', en: 'More' },
   
   // Auth
   'auth.login': { nl: 'Inloggen', en: 'Login' },
