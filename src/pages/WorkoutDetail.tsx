@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, Check, Clock, Instagram, Share2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, Clock, Instagram, Share2, Pencil } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 import { nl } from 'date-fns/locale/nl';
 import { toast } from 'sonner';
@@ -63,6 +63,7 @@ export default function WorkoutDetail() {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -90,6 +91,21 @@ export default function WorkoutDetail() {
         .single();
 
       if (workoutError) throw workoutError;
+
+      // Auto-close workouts older than 10 hours
+      if (workoutData.start_time && !workoutData.end_time) {
+        const hoursSinceStart = differenceInMinutes(new Date(), new Date(workoutData.start_time)) / 60;
+        if (hoursSinceStart >= 10) {
+          const autoEndTime = new Date(new Date(workoutData.start_time).getTime() + 10 * 60 * 60 * 1000).toISOString();
+          await supabase
+            .from('workouts')
+            .update({ end_time: autoEndTime })
+            .eq('id', workoutData.id);
+          workoutData.end_time = autoEndTime;
+          toast.info('Workout automatisch afgerond na 10 uur');
+        }
+      }
+
       setWorkout(workoutData);
 
       const { data: exercisesData, error: exercisesError } = await supabase
@@ -317,6 +333,7 @@ export default function WorkoutDetail() {
   }
 
   const isActive = !workout.end_time;
+  const canEdit = isActive || editing;
   const duration = workout.end_time && workout.start_time
     ? differenceInMinutes(new Date(workout.end_time), new Date(workout.start_time))
     : elapsed;
@@ -337,6 +354,18 @@ export default function WorkoutDetail() {
                 {duration} min
               </Badge>
             )}
+            {!isActive && !editing && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="h-4 w-4 mr-1" />
+                Bewerken
+              </Button>
+            )}
+            {!isActive && editing && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
+                <Check className="h-4 w-4 mr-1" />
+                Klaar
+              </Button>
+            )}
             {isActive && (
               <Button onClick={() => setShowFinishDialog(true)} size="sm">
                 <Check className="h-4 w-4 mr-1" />
@@ -354,7 +383,7 @@ export default function WorkoutDetail() {
               onChange={(e) => updateWorkoutTitle(e.target.value)}
               className="text-lg font-semibold border-none p-0 h-auto bg-transparent"
               placeholder="Workout titel"
-              disabled={!isActive}
+              disabled={!canEdit}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
               {format(new Date(workout.date), 'EEEE d MMMM yyyy', { locale: nl })}
@@ -403,7 +432,7 @@ export default function WorkoutDetail() {
                     </p>
                   )}
                 </div>
-                {isActive && (
+                {canEdit && (
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => deleteExercise(exercise.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -433,7 +462,7 @@ export default function WorkoutDetail() {
                             value={set.weight ?? ''}
                             onChange={(e) => updateSet(set.id, 'weight', parseFloat(e.target.value) || null)}
                             className="w-16 h-7 text-sm"
-                            disabled={!isActive}
+                            disabled={!canEdit}
                           />
                         </td>
                         <td className="p-1.5">
@@ -442,7 +471,7 @@ export default function WorkoutDetail() {
                             value={set.reps ?? ''}
                             onChange={(e) => updateSet(set.id, 'reps', parseInt(e.target.value) || null)}
                             className="w-14 h-7 text-sm"
-                            disabled={!isActive}
+                            disabled={!canEdit}
                           />
                         </td>
                         <td className="p-1.5">
@@ -451,14 +480,14 @@ export default function WorkoutDetail() {
                             value={set.rir ?? ''}
                             onChange={(e) => updateSet(set.id, 'rir', parseInt(e.target.value) || null)}
                             className="w-14 h-7 text-sm"
-                            disabled={!isActive}
+                            disabled={!canEdit}
                           />
                         </td>
                         <td className="p-1.5 text-center">
                           <Checkbox
                             checked={set.completed}
                             onCheckedChange={(checked) => updateSet(set.id, 'completed', checked)}
-                            disabled={!isActive}
+                            disabled={!canEdit}
                           />
                         </td>
                       </tr>
@@ -466,7 +495,7 @@ export default function WorkoutDetail() {
                   </tbody>
                 </table>
               </div>
-              {isActive && (
+              {canEdit && (
                 <Button variant="outline" onClick={() => addSet(exercise.id)} className="w-full h-8 text-xs">
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   Set Toevoegen
@@ -476,7 +505,7 @@ export default function WorkoutDetail() {
           </Card>
         ))}
 
-        {isActive && (
+        {canEdit && (
           <Button
             variant="outline"
             onClick={() => setShowExercisePicker(true)}
