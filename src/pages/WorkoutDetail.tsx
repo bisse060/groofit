@@ -330,7 +330,69 @@ export default function WorkoutDetail() {
     try {
       const response = await fetch(workout.photo_url);
       const blob = await response.blob();
-      const file = new File([blob], 'workout.jpg', { type: blob.type });
+      
+      // Create canvas with branding footer
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const imgUrl = URL.createObjectURL(blob);
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = imgUrl;
+      });
+
+      const footerHeight = 60;
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height + footerHeight;
+      const ctx = canvas.getContext('2d')!;
+
+      // Draw original image
+      ctx.drawImage(img, 0, 0);
+
+      // Draw dark footer
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, img.height, canvas.width, footerHeight);
+
+      // Load logo
+      const logoImg = new Image();
+      const { default: logoSrc } = await import('@/assets/grofit-logo.png');
+      
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve(); // continue without logo on error
+        logoImg.src = logoSrc;
+      });
+
+      // Draw "captured with" text + logo centered
+      const text = 'captured with';
+      const fontSize = Math.max(14, Math.round(canvas.width * 0.025));
+      ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.fillStyle = '#888888';
+      ctx.textBaseline = 'middle';
+
+      const textWidth = ctx.measureText(text).width;
+      const logoH = footerHeight * 0.5;
+      const logoW = logoImg.naturalWidth ? (logoImg.naturalWidth / logoImg.naturalHeight) * logoH : 0;
+      const gap = 6;
+      const totalW = textWidth + gap + logoW;
+      const startX = (canvas.width - totalW) / 2;
+      const centerY = img.height + footerHeight / 2;
+
+      ctx.fillText(text, startX, centerY);
+
+      if (logoImg.naturalWidth) {
+        ctx.drawImage(logoImg, startX + textWidth + gap, centerY - logoH / 2, logoW, logoH);
+      }
+
+      URL.revokeObjectURL(imgUrl);
+
+      // Convert canvas to file
+      const brandedBlob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
+      );
+      const file = new File([brandedBlob], 'workout-grofit.jpg', { type: 'image/jpeg' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
@@ -339,11 +401,10 @@ export default function WorkoutDetail() {
           text: `💪 Workout voltooid! ${totalSets} sets • ${Math.round(totalVolume).toLocaleString()} kg volume`,
         });
       } else {
-        // Fallback: download the image
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(brandedBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'workout.jpg';
+        a.download = 'workout-grofit.jpg';
         a.click();
         URL.revokeObjectURL(url);
         toast.info('Foto gedownload! Open Instagram en deel de foto vanuit je galerij.');
