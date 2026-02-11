@@ -13,6 +13,7 @@ import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import { Plus, Camera, X, Trash2, Pencil } from 'lucide-react';
 import { ImageCropper } from '@/components/ImageCropper';
+import { signPhotoUrls } from '@/lib/storage-utils';
 import { useNavigate } from 'react-router-dom';
 
 interface Measurement {
@@ -98,7 +99,8 @@ export default function Measurements() {
             .from('progress_photos')
             .select('id, photo_url, photo_type, description')
             .eq('measurement_id', measurement.id);
-          return { measurementId: measurement.id, photos: photos || [] };
+          const signedPhotos = photos ? await signPhotoUrls(photos) : [];
+          return { measurementId: measurement.id, photos: signedPhotos };
         });
         
         const photoResults = await Promise.all(photoPromises);

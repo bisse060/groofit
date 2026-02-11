@@ -11,6 +11,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Verify this is called by an authorized service (cron job)
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+  }
+  const token = authHeader.replace('Bearer ', '');
+  if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') && token !== Deno.env.get('SUPABASE_ANON_KEY')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+  }
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
