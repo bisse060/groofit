@@ -104,7 +104,7 @@ serve(async (req) => {
     const requestTokenSecret = matchingState.state.split(':')[1];
 
     // Step 3: Exchange for access token
-    const accessTokenUrl = 'https://www.fatsecret.com/oauth/access_token';
+    const accessTokenUrl = 'https://authentication.fatsecret.com/oauth/access_token';
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = generateNonce();
 
