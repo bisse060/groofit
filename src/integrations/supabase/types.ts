@@ -170,6 +170,42 @@ export type Database = {
         }
         Relationships: []
       }
+      fatsecret_credentials: {
+        Row: {
+          connected_at: string | null
+          created_at: string | null
+          fatsecret_user_id: string | null
+          id: string
+          last_sync_at: string | null
+          oauth_secret: string
+          oauth_token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string | null
+          fatsecret_user_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          oauth_secret: string
+          oauth_token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string | null
+          fatsecret_user_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          oauth_secret?: string
+          oauth_token?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       fitbit_credentials: {
         Row: {
           access_token: string | null
@@ -783,6 +819,15 @@ export type Database = {
     Functions: {
       decrypt_token: { Args: { encrypted_token: string }; Returns: string }
       encrypt_token: { Args: { token: string }; Returns: string }
+      get_fatsecret_connection_status: {
+        Args: { p_user_id: string }
+        Returns: {
+          connected_at: string
+          fatsecret_user_id: string
+          id: string
+          last_sync_at: string
+        }[]
+      }
       get_fitbit_connection_status: {
         Args: { p_user_id: string }
         Returns: {

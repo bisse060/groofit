@@ -24,3 +24,12 @@ verify_jwt = false
 [functions.fatsecret-search]
 verify_jwt = false
 
+[functions.fatsecret-auth-start]
+verify_jwt = false
+
+[functions.fatsecret-auth-callback]
+verify_jwt = false
+
+[functions.fatsecret-sync-food]
+verify_jwt = false
+

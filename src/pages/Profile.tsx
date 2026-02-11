@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,13 @@ export default function Profile() {
   const [connectingFitbit, setConnectingFitbit] = useState(false);
   const [syncingHistorical, setSyncingHistorical] = useState(false);
   const [syncProgress, setSyncProgress] = useState<any>(null);
+  const [fatsecretCredentials, setFatsecretCredentials] = useState({
+    fatsecret_user_id: null as string | null,
+    connected_at: null as string | null,
+    last_sync_at: null as string | null,
+  });
+  const [connectingFatsecret, setConnectingFatsecret] = useState(false);
+  const [syncingFatsecret, setSyncingFatsecret] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -117,6 +124,19 @@ export default function Profile() {
           .single();
         
         setSyncProgress(progress);
+      }
+
+      // Load FatSecret credentials via secure RPC
+      const { data: fsCreds } = await supabase
+        .rpc('get_fatsecret_connection_status', { p_user_id: user?.id })
+        .single();
+
+      if (fsCreds) {
+        setFatsecretCredentials({
+          fatsecret_user_id: fsCreds.fatsecret_user_id,
+          connected_at: fsCreds.connected_at,
+          last_sync_at: fsCreds.last_sync_at,
+        });
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -211,6 +231,62 @@ export default function Profile() {
       toast.error('Fout bij historische sync: ' + error.message);
     } finally {
       setSyncingHistorical(false);
+    }
+  };
+
+  const handleConnectFatsecret = async () => {
+    setConnectingFatsecret(true);
+    try {
+      const callbackUrl = 'https://groofit.lovable.app/fatsecret/callback';
+      const { data, error } = await supabase.functions.invoke('fatsecret-auth-start', {
+        body: { callbackUrl },
+      });
+
+      if (error) throw error;
+
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('No authUrl received');
+      }
+    } catch (error: any) {
+      console.error('FatSecret connect error:', error);
+      toast.error('Fout bij verbinden met FatSecret: ' + error.message);
+      setConnectingFatsecret(false);
+    }
+  };
+
+  const handleDisconnectFatsecret = async () => {
+    try {
+      const { error } = await supabase
+        .from('fatsecret_credentials')
+        .delete()
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      setFatsecretCredentials({ fatsecret_user_id: null, connected_at: null, last_sync_at: null });
+      toast.success('FatSecret verbinding verbroken');
+    } catch (error: any) {
+      toast.error('Fout bij verbreken verbinding: ' + error.message);
+    }
+  };
+
+  const handleSyncFatsecret = async () => {
+    setSyncingFatsecret(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fatsecret-sync-food', {
+        body: {},
+      });
+
+      if (error) throw error;
+
+      toast.success(`Voeding gesynchroniseerd: ${data.synced} items`);
+      loadProfile();
+    } catch (error: any) {
+      toast.error('Fout bij synchroniseren: ' + error.message);
+    } finally {
+      setSyncingFatsecret(false);
     }
   };
 
@@ -407,18 +483,57 @@ export default function Profile() {
               FatSecret Integratie
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Zoek en log voedingsmiddelen via de FatSecret database. Je dagelijkse calorieën worden automatisch gesynchroniseerd naar je dagelijkse logs.
-            </p>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => navigate('/nutrition')}
-            >
-              <UtensilsCrossed className="h-4 w-4 mr-2" />
-              Ga naar Voeding
-            </Button>
+          <CardContent className="space-y-4">
+            {!fatsecretCredentials.connected_at ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Verbind je FatSecret-account om je voedingsdagboek automatisch te synchroniseren.
+                </p>
+                <Button
+                  onClick={handleConnectFatsecret}
+                  disabled={connectingFatsecret}
+                  className="w-full"
+                >
+                  {connectingFatsecret ? 'Verbinden...' : 'Verbind FatSecret'}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">✓ FatSecret verbonden</p>
+                  {fatsecretCredentials.connected_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Sinds: {new Date(fatsecretCredentials.connected_at).toLocaleDateString('nl-NL')}
+                    </p>
+                  )}
+                  {fatsecretCredentials.last_sync_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Laatst gesynchroniseerd: {new Date(fatsecretCredentials.last_sync_at).toLocaleString('nl-NL')}
+                    </p>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Je voedingsdagboek wordt dagelijks automatisch gesynchroniseerd. Calorieën worden bijgewerkt in je dagelijkse logs.
+                </p>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleSyncFatsecret}
+                  disabled={syncingFatsecret}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${syncingFatsecret ? 'animate-spin' : ''}`} />
+                  {syncingFatsecret ? 'Synchroniseren...' : 'Nu synchroniseren'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDisconnectFatsecret}
+                  className="w-full"
+                >
+                  <Unlink className="h-4 w-4 mr-2" />
+                  Verbinding verbreken
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
