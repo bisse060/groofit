@@ -32,6 +32,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid userId format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date) || isNaN(Date.parse(date))) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid date format. Use YYYY-MM-DD' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`Syncing sleep data for user ${userId} on ${date}`);
 
     // 1: Fetch user credentials
