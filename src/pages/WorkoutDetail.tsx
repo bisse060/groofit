@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import ExercisePickerDialog from '@/components/workouts/ExercisePickerDialog';
 import FinishWorkoutDialog from '@/components/workouts/FinishWorkoutDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +74,7 @@ export default function WorkoutDetail() {
   const [loading, setLoading] = useState(true);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [editing, setEditing] = useState(false);
 
@@ -249,7 +251,15 @@ export default function WorkoutDetail() {
       }
 
       toast.success('Workout afgerond! 💪');
-      navigate('/workouts');
+      setShowFinishDialog(false);
+      // Reload to get updated workout data (end_time, photo_url etc.)
+      await loadWorkout();
+      // Show share dialog after finishing
+      if (photoUrl || workout?.photo_url) {
+        setShowShareDialog(true);
+      } else {
+        navigate('/workouts');
+      }
     } catch (error) {
       console.error('Error finishing workout:', error);
       toast.error('Fout bij het afronden');
@@ -314,11 +324,33 @@ export default function WorkoutDetail() {
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.filter(s => s.completed).length, 0);
   const totalVolume = exercises.reduce((sum, ex) => sum + ex.sets.filter(s => s.completed && s.weight && s.reps).reduce((s, set) => s + (set.weight! * set.reps!), 0), 0);
 
-  const handleShareInstagram = () => {
-    if (workout?.photo_url) {
-      const instagramUrl = `https://www.instagram.com/`;
-      window.open(instagramUrl, '_blank');
-      toast.info('Download de foto en deel deze op Instagram!');
+  const handleShareInstagram = async () => {
+    if (!workout?.photo_url) return;
+    try {
+      const response = await fetch(workout.photo_url);
+      const blob = await response.blob();
+      const file = new File([blob], 'workout.jpg', { type: blob.type });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: workout.title || 'Workout',
+          text: `💪 Workout voltooid! ${totalSets} sets • ${Math.round(totalVolume).toLocaleString()} kg volume`,
+        });
+      } else {
+        // Fallback: download the image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'workout.jpg';
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.info('Foto gedownload! Open Instagram en deel de foto vanuit je galerij.');
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        toast.error('Kon foto niet delen');
+      }
     }
   };
 
@@ -621,6 +653,32 @@ export default function WorkoutDetail() {
           totalVolume={totalVolume}
           exerciseCount={exercises.length}
         />
+
+        {/* Instagram Share Dialog after finishing */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Workout voltooid! 🎉</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {workout.photo_url && (
+                <img src={workout.photo_url} alt="Workout" className="w-full h-48 object-cover rounded-lg" />
+              )}
+              <p className="text-sm text-muted-foreground">
+                Deel je resultaat op Instagram!
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => { setShowShareDialog(false); navigate('/workouts'); }} className="flex-1">
+                  Overslaan
+                </Button>
+                <Button onClick={() => { handleShareInstagram(); setShowShareDialog(false); navigate('/workouts'); }} className="flex-1 gap-1">
+                  <Instagram className="h-4 w-4" />
+                  Delen
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="bottom-nav-spacer" />
       </div>

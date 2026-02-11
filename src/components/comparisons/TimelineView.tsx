@@ -17,10 +17,11 @@ interface ProgressPhoto {
   photo_type: string;
 }
 
-interface TimelineItemProps {
-  measurement: Measurement;
-  photos: ProgressPhoto[];
-}
+const photoTypeLabels: Record<string, string> = {
+  front: 'Voorkant',
+  side: 'Zijkant',
+  back: 'Achterkant',
+};
 
 export default function TimelineView({ 
   measurements, 
@@ -29,10 +30,6 @@ export default function TimelineView({
   measurements: Measurement[];
   photosMap: Record<string, ProgressPhoto[]>;
 }) {
-  const getPhotoByType = (photos: ProgressPhoto[], type: string) => {
-    return photos.find(p => p.photo_type === type)?.photo_url;
-  };
-
   if (measurements.length === 0) {
     return (
       <Card>
@@ -43,109 +40,98 @@ export default function TimelineView({
     );
   }
 
+  // Sort measurements from newest to oldest (they already come sorted this way)
+  const sorted = [...measurements];
+
+  const photoTypes = ['front', 'side', 'back'];
+
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto">
-        <div className="flex gap-4 pb-4 min-w-max">
-          {measurements.map((measurement) => {
-            const photos = photosMap[measurement.id] || [];
-            const frontPhoto = getPhotoByType(photos, 'front');
-            const sidePhoto = getPhotoByType(photos, 'side');
-            const backPhoto = getPhotoByType(photos, 'back');
+      {photoTypes.map((type) => {
+        // Check if any measurement has this photo type
+        const hasAny = sorted.some(m => {
+          const photos = photosMap[m.id] || [];
+          return photos.some(p => p.photo_type === type);
+        });
+        if (!hasAny) return null;
 
-            return (
-              <Card key={measurement.id} className="flex-shrink-0 w-64 md:w-72">
-                <CardContent className="p-4 space-y-3">
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg">
-                      {format(new Date(measurement.measurement_date), 'dd MMM yyyy')}
-                    </h3>
-                  </div>
+        return (
+          <div key={type} className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{photoTypeLabels[type]}</h3>
+            <div className="overflow-x-auto">
+              <div className="flex gap-3 pb-2 min-w-max">
+                {sorted.map((measurement) => {
+                  const photos = photosMap[measurement.id] || [];
+                  const photo = photos.find(p => p.photo_type === type)?.photo_url;
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {frontPhoto ? (
-                      <div className="space-y-1">
-                        <WatermarkedImage 
-                          src={frontPhoto} 
-                          alt="Front"
-                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
+                  return (
+                    <div key={measurement.id} className="flex-shrink-0 w-28 md:w-36 space-y-1">
+                      <p className="text-[10px] text-center text-muted-foreground font-medium">
+                        {format(new Date(measurement.measurement_date), 'dd MMM yyyy')}
+                      </p>
+                      {photo ? (
+                        <WatermarkedImage
+                          src={photo}
+                          alt={type}
+                          className="w-full aspect-[3/5] object-contain rounded bg-muted"
                         />
-                        <p className="text-xs text-center text-muted-foreground">Front</p>
-                      </div>
-                    ) : (
-                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                        <p className="text-xs text-muted-foreground">-</p>
-                      </div>
-                    )}
-                    
-                    {sidePhoto ? (
-                      <div className="space-y-1">
-                        <WatermarkedImage 
-                          src={sidePhoto} 
-                          alt="Side"
-                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
-                        />
-                        <p className="text-xs text-center text-muted-foreground">Side</p>
-                      </div>
-                    ) : (
-                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                        <p className="text-xs text-muted-foreground">-</p>
-                      </div>
-                    )}
-                    
-                    {backPhoto ? (
-                      <div className="space-y-1">
-                        <WatermarkedImage 
-                          src={backPhoto} 
-                          alt="Back"
-                          className="w-full aspect-[5/16] object-contain rounded bg-muted"
-                        />
-                        <p className="text-xs text-center text-muted-foreground">Back</p>
-                      </div>
-                    ) : (
-                      <div className="aspect-[5/16] bg-muted rounded flex items-center justify-center">
-                        <p className="text-xs text-muted-foreground">-</p>
-                      </div>
-                    )}
-                  </div>
+                      ) : (
+                        <div className="w-full aspect-[3/5] bg-muted rounded flex items-center justify-center">
+                          <p className="text-[10px] text-muted-foreground">-</p>
+                        </div>
+                      )}
+                      {measurement.weight !== null && (
+                        <p className="text-[10px] text-center text-muted-foreground">
+                          {measurement.weight} kg
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
-                  <div className="space-y-2 text-sm">
-                    {measurement.weight !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Gewicht:</span>
-                        <span className="font-medium">{measurement.weight} kg</span>
-                      </div>
-                    )}
-                    {measurement.shoulder_cm !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Schouders:</span>
-                        <span className="font-medium">{measurement.shoulder_cm} cm</span>
-                      </div>
-                    )}
-                    {measurement.chest_cm !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Borst:</span>
-                        <span className="font-medium">{measurement.chest_cm} cm</span>
-                      </div>
-                    )}
-                    {measurement.waist_cm !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Taille:</span>
-                        <span className="font-medium">{measurement.waist_cm} cm</span>
-                      </div>
-                    )}
-                    {measurement.hips_cm !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Heupen:</span>
-                        <span className="font-medium">{measurement.hips_cm} cm</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+      {/* Measurements table below photos */}
+      <div className="border rounded-lg overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-muted">
+            <tr>
+              <th className="text-left p-2 font-medium sticky left-0 bg-muted">Meting</th>
+              {sorted.map(m => (
+                <th key={m.id} className="text-right p-2 font-medium whitespace-nowrap">
+                  {format(new Date(m.measurement_date), 'dd MMM')}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { key: 'weight', label: 'Gewicht', unit: 'kg' },
+              { key: 'shoulder_cm', label: 'Schouders', unit: 'cm' },
+              { key: 'chest_cm', label: 'Borst', unit: 'cm' },
+              { key: 'waist_cm', label: 'Taille', unit: 'cm' },
+              { key: 'hips_cm', label: 'Heupen', unit: 'cm' },
+            ].map(field => {
+              const hasAny = sorted.some(m => m[field.key as keyof Measurement] !== null);
+              if (!hasAny) return null;
+              return (
+                <tr key={field.key} className="border-t">
+                  <td className="p-2 text-muted-foreground sticky left-0 bg-background">{field.label}</td>
+                  {sorted.map(m => (
+                    <td key={m.id} className="p-2 text-right font-medium whitespace-nowrap">
+                      {m[field.key as keyof Measurement] !== null
+                        ? `${m[field.key as keyof Measurement]}`
+                        : '-'}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
