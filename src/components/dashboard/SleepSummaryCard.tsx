@@ -12,6 +12,10 @@ interface SleepNight {
   duration_minutes: number | null;
   score: number | null;
   efficiency: number | null;
+  deep_minutes: number | null;
+  rem_minutes: number | null;
+  light_minutes: number | null;
+  wake_minutes: number | null;
 }
 
 export default function SleepSummaryCard() {
@@ -30,7 +34,7 @@ export default function SleepSummaryCard() {
 
       const { data, error } = await supabase
         .from('sleep_logs')
-        .select('date, score, duration_minutes, efficiency')
+        .select('date, score, duration_minutes, efficiency, deep_minutes, rem_minutes, light_minutes, wake_minutes')
         .eq('user_id', user?.id)
         .gte('date', weekAgo.toISOString().split('T')[0])
         .order('date', { ascending: false });
@@ -115,15 +119,10 @@ export default function SleepSummaryCard() {
                   {format(new Date(night.date), 'EEE', { locale: nl })}
                 </span>
                 <div className="flex-1 mx-2">
-                  <div
-                    className="h-2 rounded-full bg-primary/20"
-                    style={{ width: '100%' }}
-                  >
+                  <div className="h-2 rounded-full bg-primary/20" style={{ width: '100%' }}>
                     <div
                       className="h-2 rounded-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.min(100, ((night.duration_minutes || 0) / 540) * 100)}%`,
-                      }}
+                      style={{ width: `${Math.min(100, ((night.duration_minutes || 0) / 540) * 100)}%` }}
                     />
                   </div>
                 </div>
@@ -138,6 +137,62 @@ export default function SleepSummaryCard() {
               </div>
             ))}
           </div>
+
+          {/* Sleep phases average */}
+          {(() => {
+            const deepArr = nights.filter(n => n.deep_minutes != null).map(n => n.deep_minutes!);
+            const remArr = nights.filter(n => n.rem_minutes != null).map(n => n.rem_minutes!);
+            const lightArr = nights.filter(n => n.light_minutes != null).map(n => n.light_minutes!);
+            const wakeArr = nights.filter(n => n.wake_minutes != null).map(n => n.wake_minutes!);
+            
+            if (deepArr.length === 0 && remArr.length === 0) return null;
+
+            const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+            const avgDeep = avg(deepArr);
+            const avgRem = avg(remArr);
+            const avgLight = avg(lightArr);
+            const avgWake = avg(wakeArr);
+            const total = avgDeep + avgRem + avgLight + avgWake;
+
+            const phases = [
+              { label: 'Diep', minutes: avgDeep, color: 'bg-blue-600' },
+              { label: 'REM', minutes: avgRem, color: 'bg-purple-500' },
+              { label: 'Licht', minutes: avgLight, color: 'bg-sky-400' },
+              { label: 'Wakker', minutes: avgWake, color: 'bg-orange-400' },
+            ];
+
+            return (
+              <div className="pt-3 mt-1.5 border-t border-border space-y-2">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gem. slaapfasen</p>
+                {/* Stacked bar */}
+                {total > 0 && (
+                  <div className="flex h-3 rounded-full overflow-hidden">
+                    {phases.map(p => p.minutes > 0 && (
+                      <div
+                        key={p.label}
+                        className={`${p.color} transition-all`}
+                        style={{ width: `${(p.minutes / total) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* Legend */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {phases.map(p => (
+                    <div key={p.label} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full ${p.color}`} />
+                        <span className="text-muted-foreground">{p.label}</span>
+                      </div>
+                      <span className="tabular-nums font-medium">
+                        {formatDuration(p.minutes)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </Link>
