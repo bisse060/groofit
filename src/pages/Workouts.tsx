@@ -295,9 +295,9 @@ export default function Workouts() {
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Routines</h2>
-              <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => navigate('/routines/new')}>
-                <Plus className="h-3 w-3 mr-1" />
-                Nieuw
+              <Button variant="outline" size="sm" className="h-7 text-xs px-3 gap-1.5" onClick={() => navigate('/routines/new')}>
+                <Plus className="h-3.5 w-3.5" />
+                Nieuwe Routine
               </Button>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -344,10 +344,19 @@ export default function Workouts() {
         ) : (
           <section className="space-y-2">
             <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Routines</h2>
-            <Button variant="outline" size="sm" onClick={() => navigate('/routines/new')} className="w-full">
-              <Plus className="h-4 w-4 mr-1" />
-              Nieuwe Routine
-            </Button>
+            <Card className="border-dashed cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/routines/new')}>
+              <CardContent className="py-6">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <Plus className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground">Nieuwe Routine Aanmaken</p>
+                    <p className="text-xs">Maak een herbruikbaar workout-sjabloon</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </section>
         )}
 
