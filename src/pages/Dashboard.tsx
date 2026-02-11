@@ -61,10 +61,42 @@ export default function Dashboard() {
         .eq('workout_completed', true)
         .gte('log_date', weekAgo.toISOString().split('T')[0]);
 
+      // Get current weight: prioritize Fitbit, then measurements, then profile
+      let currentWeight = profile?.current_weight || 0;
+
+      // Try Fitbit weight first
+      const { data: fitbitWeight } = await supabase
+        .from('daily_logs')
+        .select('weight')
+        .eq('user_id', user?.id)
+        .eq('synced_from_fitbit', true)
+        .not('weight', 'is', null)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fitbitWeight?.weight) {
+        currentWeight = Number(fitbitWeight.weight);
+      } else {
+        // Try measurements
+        const { data: latestMeasurement } = await supabase
+          .from('measurements')
+          .select('weight')
+          .eq('user_id', user?.id)
+          .not('weight', 'is', null)
+          .order('measurement_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestMeasurement?.weight) {
+          currentWeight = Number(latestMeasurement.weight);
+        }
+      }
+
       setStats({
         todaySteps: todayLog?.steps || 0,
         weekWorkouts: weekLogs?.length || 0,
-        currentWeight: profile?.current_weight || 0,
+        currentWeight,
         targetWeight: profile?.target_weight || 0,
       });
     } catch (error) {

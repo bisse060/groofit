@@ -6,10 +6,12 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface WeightData {
   date: string;
   weight: number;
+  source: 'fitbit' | 'measurement';
 }
 
 type Period = '30' | '60' | '90';
@@ -19,6 +21,7 @@ export default function WeightTrendChart() {
   const [data, setData] = useState<WeightData[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('30');
+  const [dataSource, setDataSource] = useState<'fitbit' | 'measurement' | 'none'>('none');
 
   useEffect(() => {
     if (user) {
@@ -29,6 +32,27 @@ export default function WeightTrendChart() {
   const loadWeightData = async () => {
     try {
       setLoading(true);
+
+      // 1. Try Fitbit data first (daily_logs with weight from Fitbit)
+      const { data: fitbitLogs, error: fitbitError } = await supabase
+        .from('daily_logs')
+        .select('log_date, weight')
+        .eq('user_id', user?.id)
+        .eq('synced_from_fitbit', true)
+        .not('weight', 'is', null)
+        .order('log_date', { ascending: true });
+
+      if (!fitbitError && fitbitLogs && fitbitLogs.length > 0) {
+        setData(fitbitLogs.map(l => ({
+          date: l.log_date,
+          weight: Number(l.weight),
+          source: 'fitbit' as const,
+        })));
+        setDataSource('fitbit');
+        return;
+      }
+
+      // 2. Fallback to manual measurements
       const { data: measurements, error } = await supabase
         .from('measurements')
         .select('measurement_date, weight')
@@ -38,12 +62,15 @@ export default function WeightTrendChart() {
 
       if (error) throw error;
 
-      if (measurements) {
-        const formattedData = measurements.map(m => ({
+      if (measurements && measurements.length > 0) {
+        setData(measurements.map(m => ({
           date: m.measurement_date,
           weight: Number(m.weight),
-        }));
-        setData(formattedData);
+          source: 'measurement' as const,
+        })));
+        setDataSource('measurement');
+      } else {
+        setDataSource('none');
       }
     } catch (error) {
       console.error('Error loading weight data:', error);
@@ -56,7 +83,6 @@ export default function WeightTrendChart() {
     const days = parseInt(period);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-
     return data.filter(item => new Date(item.date) >= cutoffDate);
   };
 
@@ -107,6 +133,9 @@ export default function WeightTrendChart() {
             </div>
             <CardTitle className="text-base">Gewicht</CardTitle>
           </div>
+          {dataSource === 'fitbit' && (
+            <Badge variant="secondary" className="text-[10px]">Fitbit</Badge>
+          )}
         </div>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="w-full mt-2">
           <TabsList className="grid w-full grid-cols-3 h-8">
