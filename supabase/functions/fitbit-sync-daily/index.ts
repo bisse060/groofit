@@ -144,7 +144,21 @@ serve(async (req) => {
     const activityData = await activityResponse.json();
     const steps = activityData.summary?.steps || 0;
     const caloriesOut = activityData.summary?.caloriesOut || 0;
+    const restingHeartRate = activityData.summary?.restingHeartRate || null;
+    const activeMinutesLightly = activityData.summary?.lightlyActiveMinutes || null;
+    const activeMinutesFairly = activityData.summary?.fairlyActiveMinutes || null;
+    const activeMinutesVery = activityData.summary?.veryActiveMinutes || null;
+    const distances = activityData.summary?.distances || [];
+    const totalDistance = distances.find((d: any) => d.activity === 'total')?.distance || null;
 
+    // Extract heart rate zones
+    const heartRateZones = activityData.summary?.heartRateZones || [];
+    const fatBurnZone = heartRateZones.find((z: any) => z.name === 'Fat Burn');
+    const cardioZone = heartRateZones.find((z: any) => z.name === 'Cardio');
+    const peakZone = heartRateZones.find((z: any) => z.name === 'Peak');
+    const heartRateFatBurnMinutes = fatBurnZone?.minutes || null;
+    const heartRateCardioMinutes = cardioZone?.minutes || null;
+    const heartRatePeakMinutes = peakZone?.minutes || null;
     // Fetch weight and body fat data from Fitbit
     let weight = null;
     let bodyFat = null;
@@ -199,6 +213,14 @@ serve(async (req) => {
         calorie_burn: caloriesOut,
         weight: weight,
         body_fat_percentage: bodyFat,
+        resting_heart_rate: restingHeartRate,
+        heart_rate_fat_burn_minutes: heartRateFatBurnMinutes,
+        heart_rate_cardio_minutes: heartRateCardioMinutes,
+        heart_rate_peak_minutes: heartRatePeakMinutes,
+        active_minutes_lightly: activeMinutesLightly,
+        active_minutes_fairly: activeMinutesFairly,
+        active_minutes_very: activeMinutesVery,
+        distance_km: totalDistance,
         synced_from_fitbit: true,
       }, {
         onConflict: 'user_id,log_date',
@@ -222,7 +244,7 @@ serve(async (req) => {
         user_id: user.id,
         sync_date: date,
         status: 'success',
-        message: `Synced ${steps} steps, ${caloriesOut} calories${weight ? `, ${weight} kg` : ''}${bodyFat ? `, ${bodyFat}% fat` : ''}`,
+        message: `Synced ${steps} steps, ${caloriesOut} cal${restingHeartRate ? `, ${restingHeartRate} bpm` : ''}${weight ? `, ${weight} kg` : ''}`,
       });
 
     return new Response(
@@ -231,6 +253,7 @@ serve(async (req) => {
         date: date,
         steps: steps,
         calories_out: caloriesOut,
+        resting_heart_rate: restingHeartRate,
         weight: weight,
         body_fat_percentage: bodyFat,
       }),

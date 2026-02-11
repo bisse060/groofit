@@ -49,13 +49,21 @@ export type Database = {
       }
       daily_logs: {
         Row: {
+          active_minutes_fairly: number | null
+          active_minutes_lightly: number | null
+          active_minutes_very: number | null
           body_fat_percentage: number | null
           calorie_burn: number | null
           calorie_intake: number | null
           created_at: string | null
+          distance_km: number | null
+          heart_rate_cardio_minutes: number | null
+          heart_rate_fat_burn_minutes: number | null
+          heart_rate_peak_minutes: number | null
           id: string
           log_date: string
           notes: string | null
+          resting_heart_rate: number | null
           steps: number | null
           synced_from_fitbit: boolean | null
           tags: string[] | null
@@ -65,13 +73,21 @@ export type Database = {
           workout_completed: boolean | null
         }
         Insert: {
+          active_minutes_fairly?: number | null
+          active_minutes_lightly?: number | null
+          active_minutes_very?: number | null
           body_fat_percentage?: number | null
           calorie_burn?: number | null
           calorie_intake?: number | null
           created_at?: string | null
+          distance_km?: number | null
+          heart_rate_cardio_minutes?: number | null
+          heart_rate_fat_burn_minutes?: number | null
+          heart_rate_peak_minutes?: number | null
           id?: string
           log_date: string
           notes?: string | null
+          resting_heart_rate?: number | null
           steps?: number | null
           synced_from_fitbit?: boolean | null
           tags?: string[] | null
@@ -81,13 +97,21 @@ export type Database = {
           workout_completed?: boolean | null
         }
         Update: {
+          active_minutes_fairly?: number | null
+          active_minutes_lightly?: number | null
+          active_minutes_very?: number | null
           body_fat_percentage?: number | null
           calorie_burn?: number | null
           calorie_intake?: number | null
           created_at?: string | null
+          distance_km?: number | null
+          heart_rate_cardio_minutes?: number | null
+          heart_rate_fat_burn_minutes?: number | null
+          heart_rate_peak_minutes?: number | null
           id?: string
           log_date?: string
           notes?: string | null
+          resting_heart_rate?: number | null
           steps?: number | null
           synced_from_fitbit?: boolean | null
           tags?: string[] | null

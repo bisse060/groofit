@@ -296,6 +296,18 @@ async function syncActivityData(supabaseClient: any, userId: string, accessToken
   const activityData = await activityResponse.json();
   const steps = activityData.summary?.steps || 0;
   const caloriesOut = activityData.summary?.caloriesOut || 0;
+  const restingHeartRate = activityData.summary?.restingHeartRate || null;
+  const activeMinutesLightly = activityData.summary?.lightlyActiveMinutes || null;
+  const activeMinutesFairly = activityData.summary?.fairlyActiveMinutes || null;
+  const activeMinutesVery = activityData.summary?.veryActiveMinutes || null;
+  const distances = activityData.summary?.distances || [];
+  const totalDistance = distances.find((d: any) => d.activity === 'total')?.distance || null;
+
+  // Extract heart rate zones
+  const heartRateZones = activityData.summary?.heartRateZones || [];
+  const fatBurnZone = heartRateZones.find((z: any) => z.name === 'Fat Burn');
+  const cardioZone = heartRateZones.find((z: any) => z.name === 'Cardio');
+  const peakZone = heartRateZones.find((z: any) => z.name === 'Peak');
 
   // Fetch weight and body fat
   let weight = null;
@@ -343,6 +355,14 @@ async function syncActivityData(supabaseClient: any, userId: string, accessToken
       calorie_burn: caloriesOut,
       weight: weight,
       body_fat_percentage: bodyFat,
+      resting_heart_rate: restingHeartRate,
+      heart_rate_fat_burn_minutes: fatBurnZone?.minutes || null,
+      heart_rate_cardio_minutes: cardioZone?.minutes || null,
+      heart_rate_peak_minutes: peakZone?.minutes || null,
+      active_minutes_lightly: activeMinutesLightly,
+      active_minutes_fairly: activeMinutesFairly,
+      active_minutes_very: activeMinutesVery,
+      distance_km: totalDistance,
       synced_from_fitbit: true,
     }, {
       onConflict: 'user_id,log_date',
