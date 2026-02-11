@@ -36,7 +36,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/daily-logs', icon: FileText, label: t('nav.dailyLogs') },
     { path: '/measurements', icon: Ruler, label: t('nav.measurements') },
-    { path: '/sleep', icon: Moon, label: t('nav.sleep') },
+    
     { path: '/health', icon: HeartPulse, label: t('nav.health') },
     { path: '/workouts', icon: Dumbbell, label: t('nav.workouts') },
     { path: '/exercises', icon: BookOpen, label: t('nav.exercises') },
