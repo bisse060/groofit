@@ -242,7 +242,7 @@ export default function Comparisons() {
 
         <Tabs defaultValue="comparison" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="comparison">Laatste 2 Metingen</TabsTrigger>
+            <TabsTrigger value="comparison">Vergelijking</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
