@@ -10,13 +10,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor, Activity, Unlink } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
+import { Badge } from '@/components/ui/badge';
 
 export default function Profile() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { tier, tierName, loading: tierLoading } = useSubscription();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -230,6 +233,25 @@ export default function Profile() {
           <h1 className="text-2xl font-semibold">{t('profile.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">Beheer je profielinformatie</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5" />
+              Abonnement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <Badge variant={tier?.name === 'tester' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+                {tierName}
+              </Badge>
+              {tier?.description && (
+                <span className="text-sm text-muted-foreground">{tier.description}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

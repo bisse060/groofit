@@ -10,7 +10,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon, Image, Calendar, Weight, Ruler } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon, Image, Calendar, Weight, Ruler, Crown } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,6 +28,8 @@ export default function Admin() {
   });
   const [users, setUsers] = useState<any[]>([]);
   const [measurements, setMeasurements] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Record<string, { tier_id: string; tier_name: string; display_name: string }>>({});
+  const [tiers, setTiers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDetails, setUserDetails] = useState<{
     measurements: any[];
@@ -50,6 +54,7 @@ export default function Admin() {
       loadAdminStats();
       loadUsers();
       loadMeasurements();
+      loadSubscriptions();
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -127,6 +132,59 @@ export default function Admin() {
         sleepLogs: sleepRes.data || [],
         photos: photosRes.data || [],
       });
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const loadSubscriptions = async () => {
+    try {
+      const [{ data: tiersData }, { data: subsData }] = await Promise.all([
+        supabase.from('subscription_tiers').select('*').order('sort_order'),
+        supabase.from('user_subscriptions').select('user_id, tier_id'),
+      ]);
+
+      setTiers(tiersData || []);
+
+      const subsMap: Record<string, { tier_id: string; tier_name: string; display_name: string }> = {};
+      if (subsData && tiersData) {
+        const tiersMap = new Map(tiersData.map((t: any) => [t.id, t]));
+        subsData.forEach((s: any) => {
+          const t = tiersMap.get(s.tier_id);
+          if (t) {
+            subsMap[s.user_id] = { tier_id: s.tier_id, tier_name: (t as any).name, display_name: (t as any).display_name };
+          }
+        });
+      }
+      setSubscriptions(subsMap);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const updateUserTier = async (userId: string, newTierId: string) => {
+    try {
+      const { data: existing } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .update({ tier_id: newTierId, updated_at: new Date().toISOString() })
+          .eq('user_id', userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .insert({ user_id: userId, tier_id: newTierId });
+        if (error) throw error;
+      }
+
+      toast.success('Tier bijgewerkt');
+      loadSubscriptions();
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -261,9 +319,9 @@ export default function Admin() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Tier</TableHead>
                   <TableHead>Weight</TableHead>
                   <TableHead>Target</TableHead>
-                  <TableHead>Height</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -272,9 +330,30 @@ export default function Admin() {
                 {users.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.full_name}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={subscriptions[u.id]?.tier_id || ''}
+                        onValueChange={(val) => updateUserTier(u.id, val)}
+                      >
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue placeholder="—">
+                            {subscriptions[u.id] ? (
+                              <Badge variant={subscriptions[u.id].tier_name === 'tester' ? 'default' : 'secondary'} className="text-xs">
+                                {subscriptions[u.id].tier_name === 'tester' && <Crown className="h-3 w-3 mr-1" />}
+                                {subscriptions[u.id].display_name}
+                              </Badge>
+                            ) : '—'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tiers.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.display_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>{u.current_weight ? `${u.current_weight} kg` : '-'}</TableCell>
                     <TableCell>{u.target_weight ? `${u.target_weight} kg` : '-'}</TableCell>
-                    <TableCell>{u.height_cm ? `${u.height_cm} cm` : '-'}</TableCell>
                     <TableCell>{format(new Date(u.created_at), 'dd/MM/yyyy')}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
