@@ -408,9 +408,6 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">✓ FatSecret verbonden</span>
-            </div>
             <p className="text-sm text-muted-foreground">
               Zoek en log voedingsmiddelen via de FatSecret database. Je dagelijkse calorieën worden automatisch gesynchroniseerd naar je dagelijkse logs.
             </p>
