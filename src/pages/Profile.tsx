@@ -97,11 +97,9 @@ export default function Profile() {
         });
       }
 
-      // Load Fitbit credentials from separate table
+      // Load Fitbit credentials via secure RPC (tokens not exposed)
       const { data: credentials } = await supabase
-        .from('fitbit_credentials')
-        .select('fitbit_user_id, connected_at, last_sync_at')
-        .eq('user_id', user?.id)
+        .rpc('get_fitbit_connection_status', { p_user_id: user?.id })
         .single();
 
       if (credentials) {
