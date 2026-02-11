@@ -40,14 +40,14 @@ export default function Sleep() {
 
   const loadSleepLogs = async () => {
     try {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const { data, error } = await supabase
         .from('sleep_logs')
         .select('*')
         .eq('user_id', user?.id)
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+        .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -105,7 +105,7 @@ export default function Sleep() {
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Slaapduur laatste 30 dagen</CardTitle>
+              <CardTitle>Slaapduur laatste 90 dagen</CardTitle>
             </CardHeader>
             <CardContent>
               <SleepDurationChart logs={logs} />
@@ -114,7 +114,7 @@ export default function Sleep() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Slaapfasen laatste 30 dagen</CardTitle>
+              <CardTitle>Slaapfasen laatste 90 dagen</CardTitle>
             </CardHeader>
             <CardContent>
               <SleepPhasesChart logs={logs} />
