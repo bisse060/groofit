@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor, Activity, Unlink, Crown } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
@@ -397,6 +397,31 @@ export default function Profile() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UtensilsCrossed className="h-5 w-5" />
+              FatSecret Integratie
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">✓ FatSecret verbonden</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Zoek en log voedingsmiddelen via de FatSecret database. Je dagelijkse calorieën worden automatisch gesynchroniseerd naar je dagelijkse logs.
+            </p>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => navigate('/nutrition')}
+            >
+              <UtensilsCrossed className="h-4 w-4 mr-2" />
+              Ga naar Voeding
+            </Button>
           </CardContent>
         </Card>
 
