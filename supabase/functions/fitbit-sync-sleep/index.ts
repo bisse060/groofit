@@ -51,31 +51,19 @@ Deno.serve(async (req) => {
 
     let accessToken = credentials.access_token;
     let refreshToken = credentials.refresh_token;
-    
-    // Try to decrypt tokens, fallback to using them directly
-    try {
-      const { data: decryptedAccessToken } = await supabaseAdmin.rpc('decrypt_token', { 
-        encrypted_token: credentials.access_token 
-      });
-      if (decryptedAccessToken) {
-        accessToken = decryptedAccessToken;
-      }
-      
-      const { data: decryptedRefreshToken } = await supabaseAdmin.rpc('decrypt_token', { 
-        encrypted_token: credentials.refresh_token 
-      });
-      if (decryptedRefreshToken) {
-        refreshToken = decryptedRefreshToken;
-      }
-    } catch (error) {
-      console.log('Failed to decrypt tokens, using stored values directly');
+
+    if (!accessToken || !refreshToken) {
+      return new Response(
+        JSON.stringify({ error: 'Fitbit tokens missing. User needs to reconnect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     const expiresAt = credentials.token_expires_at
       ? new Date(credentials.token_expires_at)
       : null;
 
-    // 2. Refresh token if needed
+    // Refresh token if needed
     const now = new Date();
     if (!expiresAt || expiresAt.getTime() - now.getTime() < 60 * 1000) {
       console.log('Refreshing Fitbit token...');
@@ -102,19 +90,11 @@ Deno.serve(async (req) => {
 
       const newExpiresAt = new Date(now.getTime() + tokenJson.expires_in * 1000).toISOString();
 
-      // Encrypt new tokens before storing
-      const { data: encryptedAccessToken } = await supabaseAdmin.rpc('encrypt_token', { 
-        token: tokenJson.access_token 
-      });
-      const { data: encryptedRefreshToken } = await supabaseAdmin.rpc('encrypt_token', { 
-        token: tokenJson.refresh_token ?? refreshToken
-      });
-
       await supabaseAdmin
         .from('fitbit_credentials')
         .update({
-          access_token: encryptedAccessToken || tokenJson.access_token,
-          refresh_token: encryptedRefreshToken || (tokenJson.refresh_token ?? refreshToken),
+          access_token: tokenJson.access_token,
+          refresh_token: tokenJson.refresh_token ?? refreshToken,
           token_expires_at: newExpiresAt,
           last_sync_at: new Date().toISOString(),
         })

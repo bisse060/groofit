@@ -12,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // Use service role for cron job access
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -20,7 +19,6 @@ serve(async (req) => {
 
     console.log('Starting incremental sync job...');
 
-    // Get all users with in_progress syncs
     const { data: syncProgressRecords, error: progressError } = await supabaseAdmin
       .from('fitbit_sync_progress')
       .select('*')
@@ -44,7 +42,6 @@ serve(async (req) => {
 
     const results = [];
 
-    // Process each user's sync (max 30 days per user per hour)
     for (const syncProgress of syncProgressRecords) {
       try {
         const result = await processUserSync(supabaseAdmin, syncProgress);
@@ -60,11 +57,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Processed ${results.length} sync(s)`,
-        results
-      }),
+      JSON.stringify({ success: true, message: `Processed ${results.length} sync(s)`, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -76,13 +69,15 @@ serve(async (req) => {
   }
 });
 
+// Fitbit allows 150 API calls/hour. Each day uses ~3 calls (activity + weight/fat + sleep).
+// So max ~50 days per hour to stay safe.
+const DAYS_PER_RUN = 50;
+
 async function processUserSync(supabaseAdmin: any, syncProgress: any) {
-  const DAYS_PER_HOUR = 30;
   const userId = syncProgress.user_id;
   
   console.log(`Processing sync for user ${userId}: ${syncProgress.days_synced}/${syncProgress.total_days} days`);
 
-  // Get user credentials with Fitbit tokens
   const { data: credentials, error: credentialsError } = await supabaseAdmin
     .from('fitbit_credentials')
     .select('fitbit_user_id, access_token, refresh_token, token_expires_at')
@@ -93,15 +88,22 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
     throw new Error('Fitbit not connected');
   }
 
+  // Use tokens directly (no encryption)
+  let accessToken = credentials.access_token;
+  const refreshToken = credentials.refresh_token;
+
+  if (!accessToken || !refreshToken) {
+    throw new Error('Fitbit tokens are missing. User needs to reconnect.');
+  }
+
   // Refresh token if needed
-  let accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, credentials);
+  accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, accessToken, refreshToken, credentials.token_expires_at);
 
   let daysSyncedThisRun = 0;
   let successCount = 0;
   let failCount = 0;
 
-  // Sync up to DAYS_PER_HOUR days
-  const daysToSync = Math.min(DAYS_PER_HOUR, syncProgress.total_days - syncProgress.days_synced);
+  const daysToSync = Math.min(DAYS_PER_RUN, syncProgress.total_days - syncProgress.days_synced);
 
   for (let i = 0; i < daysToSync; i++) {
     const dayOffset = syncProgress.current_day_offset + i;
@@ -110,39 +112,40 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
     const dateStr = date.toISOString().split('T')[0];
 
     try {
-      // Refresh token every 10 requests
-      if (i > 0 && i % 10 === 0) {
-        const { data: refreshCredentials } = await supabaseAdmin
+      // Refresh token every 15 requests to stay safe
+      if (i > 0 && i % 15 === 0) {
+        const { data: freshCreds } = await supabaseAdmin
           .from('fitbit_credentials')
           .select('access_token, refresh_token, token_expires_at')
           .eq('user_id', userId)
           .single();
-        accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, refreshCredentials);
+        if (freshCreds) {
+          accessToken = await refreshTokenIfNeeded(supabaseAdmin, userId, freshCreds.access_token, freshCreds.refresh_token, freshCreds.token_expires_at);
+        }
       }
 
-      // Sync activity data
       await syncActivityData(supabaseAdmin, userId, accessToken, dateStr);
-      
-      // Small delay between endpoints
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Sync sleep data
+      await new Promise(resolve => setTimeout(resolve, 200));
       await syncSleepData(supabaseAdmin, userId, accessToken, dateStr);
       
       successCount++;
       console.log(`✓ Synced ${dateStr} for user ${userId}`);
       
-      // Small delay between days
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       console.error(`✗ Error syncing ${dateStr} for user ${userId}:`, error);
       failCount++;
+      
+      // If we get a 429 (rate limit), stop this run
+      if (error instanceof Error && error.message.includes('429')) {
+        console.log('Rate limited, stopping this run');
+        break;
+      }
     }
     
     daysSyncedThisRun++;
   }
 
-  // Update sync progress
   const newDaysSynced = syncProgress.days_synced + daysSyncedThisRun;
   const newDayOffset = syncProgress.current_day_offset + daysSyncedThisRun;
   const isComplete = newDaysSynced >= syncProgress.total_days;
@@ -158,7 +161,6 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
     })
     .eq('user_id', userId);
 
-  // Update credentials last sync time
   if (successCount > 0) {
     await supabaseAdmin
       .from('fitbit_credentials')
@@ -177,22 +179,12 @@ async function processUserSync(supabaseAdmin: any, syncProgress: any) {
   };
 }
 
-async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credentials: any) {
-  const expiresAt = new Date(credentials.token_expires_at);
+async function refreshTokenIfNeeded(
+  supabaseClient: any, userId: string,
+  accessToken: string, refreshToken: string, tokenExpiresAt: string
+) {
+  const expiresAt = new Date(tokenExpiresAt);
   
-  // Try to decrypt the access token, fallback to using it directly if decryption fails
-  let accessToken = credentials.access_token;
-  try {
-    const { data: decryptedAccessToken } = await supabaseClient.rpc('decrypt_token', { 
-      encrypted_token: credentials.access_token 
-    });
-    if (decryptedAccessToken) {
-      accessToken = decryptedAccessToken;
-    }
-  } catch (error) {
-    console.log('Failed to decrypt access token, using stored value directly');
-  }
-
   // If token is still valid (with 5 minute buffer), return it
   if (expiresAt > new Date(Date.now() + 300000)) {
     return accessToken;
@@ -200,28 +192,14 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
 
   console.log('Token expired, refreshing...');
   
-  // Try to decrypt refresh token, fallback to using it directly
-  let refreshToken = credentials.refresh_token;
-  try {
-    const { data: decryptedRefreshToken } = await supabaseClient.rpc('decrypt_token', { 
-      encrypted_token: credentials.refresh_token 
-    });
-    if (decryptedRefreshToken) {
-      refreshToken = decryptedRefreshToken;
-    }
-  } catch (error) {
-    console.log('Failed to decrypt refresh token, using stored value directly');
-  }
-
   const clientId = Deno.env.get('FITBIT_CLIENT_ID');
   const clientSecret = Deno.env.get('FITBIT_CLIENT_SECRET');
-  const basicAuth = btoa(`${clientId}:${clientSecret}`);
 
   if (!clientId || !clientSecret) {
-    throw new Error('Missing FITBIT_CLIENT_ID or FITBIT_CLIENT_SECRET environment variables');
+    throw new Error('Missing FITBIT_CLIENT_ID or FITBIT_CLIENT_SECRET');
   }
 
-  console.log('Attempting token refresh with client ID:', clientId?.substring(0, 6) + '...');
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
   
   const refreshResponse = await fetch('https://api.fitbit.com/oauth2/token', {
     method: 'POST',
@@ -239,11 +217,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
     const errorText = await refreshResponse.text();
     console.error(`Fitbit token refresh failed: ${refreshResponse.status} - ${errorText}`);
     
-    // If refresh token is invalid, mark the connection as broken
     if (refreshResponse.status === 401 || refreshResponse.status === 400) {
-      console.log('Refresh token invalid, user needs to reconnect Fitbit');
-      
-      // Update sync progress to show error
       await supabaseClient
         .from('fitbit_sync_progress')
         .update({
@@ -253,25 +227,18 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
         .eq('user_id', userId);
     }
     
-    throw new Error(`Failed to refresh token: ${refreshResponse.status} - ${errorText}`);
+    throw new Error(`Failed to refresh token: ${refreshResponse.status}`);
   }
 
   const tokenData = await refreshResponse.json();
   const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-  // Encrypt new tokens before storing
-  const { data: encryptedAccessToken } = await supabaseClient.rpc('encrypt_token', { 
-    token: tokenData.access_token 
-  });
-  const { data: encryptedRefreshToken } = await supabaseClient.rpc('encrypt_token', { 
-    token: tokenData.refresh_token 
-  });
-
+  // Store new tokens directly
   await supabaseClient
     .from('fitbit_credentials')
     .update({
-      access_token: encryptedAccessToken,
-      refresh_token: encryptedRefreshToken,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
       token_expires_at: newExpiresAt.toISOString(),
     })
     .eq('user_id', userId);
@@ -282,9 +249,7 @@ async function refreshTokenIfNeeded(supabaseClient: any, userId: string, credent
 async function syncActivityData(supabaseClient: any, userId: string, accessToken: string, date: string) {
   const activityResponse = await fetch(
     `https://api.fitbit.com/1/user/-/activities/date/${date}.json`,
-    {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    }
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
   );
 
   if (!activityResponse.ok) {
@@ -294,119 +259,86 @@ async function syncActivityData(supabaseClient: any, userId: string, accessToken
   }
 
   const activityData = await activityResponse.json();
-  const steps = activityData.summary?.steps || 0;
-  const caloriesOut = activityData.summary?.caloriesOut || 0;
-  const restingHeartRate = activityData.summary?.restingHeartRate || null;
-  const activeMinutesLightly = activityData.summary?.lightlyActiveMinutes || null;
-  const activeMinutesFairly = activityData.summary?.fairlyActiveMinutes || null;
-  const activeMinutesVery = activityData.summary?.veryActiveMinutes || null;
-  const distances = activityData.summary?.distances || [];
-  const totalDistance = distances.find((d: any) => d.activity === 'total')?.distance || null;
-
-  // Extract heart rate zones
-  const heartRateZones = activityData.summary?.heartRateZones || [];
-  const fatBurnZone = heartRateZones.find((z: any) => z.name === 'Fat Burn');
-  const cardioZone = heartRateZones.find((z: any) => z.name === 'Cardio');
-  const peakZone = heartRateZones.find((z: any) => z.name === 'Peak');
+  const summary = activityData.summary || {};
+  const distances = summary.distances || [];
+  const heartRateZones = summary.heartRateZones || [];
 
   // Fetch weight and body fat
   let weight = null;
   let bodyFat = null;
 
   try {
-    const weightResponse = await fetch(
-      `https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`,
-      {
+    const [weightRes, fatRes] = await Promise.all([
+      fetch(`https://api.fitbit.com/1/user/-/body/log/weight/date/${date}.json`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
-      }
-    );
+      }),
+      fetch(`https://api.fitbit.com/1/user/-/body/log/fat/date/${date}.json`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      }),
+    ]);
 
-    if (weightResponse.ok) {
-      const weightData = await weightResponse.json();
-      if (weightData.weight && weightData.weight.length > 0) {
-        weight = weightData.weight[0].weight;
-      }
+    if (weightRes.ok) {
+      const weightData = await weightRes.json();
+      if (weightData.weight?.[0]) weight = weightData.weight[0].weight;
     }
-
-    const fatResponse = await fetch(
-      `https://api.fitbit.com/1/user/-/body/log/fat/date/${date}.json`,
-      {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      }
-    );
-
-    if (fatResponse.ok) {
-      const fatData = await fatResponse.json();
-      if (fatData.fat && fatData.fat.length > 0) {
-        bodyFat = fatData.fat[0].fat;
-      }
+    if (fatRes.ok) {
+      const fatData = await fatRes.json();
+      if (fatData.fat?.[0]) bodyFat = fatData.fat[0].fat;
     }
   } catch (error) {
     console.error('Error fetching body data:', error);
   }
 
-  // Upsert daily log
   await supabaseClient
     .from('daily_logs')
     .upsert({
       user_id: userId,
       log_date: date,
-      steps: steps,
-      calorie_burn: caloriesOut,
-      weight: weight,
+      steps: summary.steps || 0,
+      calorie_burn: summary.caloriesOut || 0,
+      weight,
       body_fat_percentage: bodyFat,
-      resting_heart_rate: restingHeartRate,
-      heart_rate_fat_burn_minutes: fatBurnZone?.minutes || null,
-      heart_rate_cardio_minutes: cardioZone?.minutes || null,
-      heart_rate_peak_minutes: peakZone?.minutes || null,
-      active_minutes_lightly: activeMinutesLightly,
-      active_minutes_fairly: activeMinutesFairly,
-      active_minutes_very: activeMinutesVery,
-      distance_km: totalDistance,
+      resting_heart_rate: summary.restingHeartRate || null,
+      heart_rate_fat_burn_minutes: heartRateZones.find((z: any) => z.name === 'Fat Burn')?.minutes || null,
+      heart_rate_cardio_minutes: heartRateZones.find((z: any) => z.name === 'Cardio')?.minutes || null,
+      heart_rate_peak_minutes: heartRateZones.find((z: any) => z.name === 'Peak')?.minutes || null,
+      active_minutes_lightly: summary.lightlyActiveMinutes || null,
+      active_minutes_fairly: summary.fairlyActiveMinutes || null,
+      active_minutes_very: summary.veryActiveMinutes || null,
+      distance_km: distances.find((d: any) => d.activity === 'total')?.distance || null,
       synced_from_fitbit: true,
-    }, {
-      onConflict: 'user_id,log_date',
-    });
+    }, { onConflict: 'user_id,log_date' });
 }
 
 async function syncSleepData(supabaseClient: any, userId: string, accessToken: string, date: string) {
   try {
     const fitbitResponse = await fetch(
       `https://api.fitbit.com/1.2/user/-/sleep/date/${date}.json`,
-      {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      }
+      { headers: { 'Authorization': `Bearer ${accessToken}` } }
     );
 
-    if (!fitbitResponse.ok) {
-      return; // Skip if no sleep data
-    }
+    if (!fitbitResponse.ok) return;
 
     const data = await fitbitResponse.json();
     const mainLog = data.sleep?.[0];
-    
-    if (!mainLog) {
-      return; // No sleep data for this date
-    }
-
-    const sleepData = {
-      user_id: userId,
-      date,
-      duration_minutes: Math.floor(mainLog.duration / 60000),
-      efficiency: mainLog.efficiency || null,
-      score: mainLog.efficiency || null,
-      deep_minutes: mainLog.levels?.summary?.deep?.minutes || 0,
-      rem_minutes: mainLog.levels?.summary?.rem?.minutes || 0,
-      light_minutes: mainLog.levels?.summary?.light?.minutes || 0,
-      wake_minutes: mainLog.levels?.summary?.wake?.minutes || 0,
-      start_time: mainLog.startTime,
-      end_time: mainLog.endTime,
-      raw: data,
-    };
+    if (!mainLog) return;
 
     await supabaseClient
       .from('sleep_logs')
-      .upsert(sleepData, { onConflict: 'user_id,date' });
+      .upsert({
+        user_id: userId,
+        date,
+        duration_minutes: Math.floor(mainLog.duration / 60000),
+        efficiency: mainLog.efficiency || null,
+        score: mainLog.efficiency || null,
+        deep_minutes: mainLog.levels?.summary?.deep?.minutes || 0,
+        rem_minutes: mainLog.levels?.summary?.rem?.minutes || 0,
+        light_minutes: mainLog.levels?.summary?.light?.minutes || 0,
+        wake_minutes: mainLog.levels?.summary?.wake?.minutes || 0,
+        start_time: mainLog.startTime,
+        end_time: mainLog.endTime,
+        raw: data,
+      }, { onConflict: 'user_id,date' });
   } catch (error) {
     console.error('Error syncing sleep data:', error);
   }
