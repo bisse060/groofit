@@ -390,30 +390,61 @@ export default function WorkoutDetail() {
               {!isActive && duration > 0 && ` • ${duration} min`}
             </p>
 
-            {/* Completed workout summary */}
+            {/* Completed workout: photo + stats side by side */}
             {!isActive && (
-              <div className="flex items-center gap-4 mt-2 pt-2 border-t text-xs text-muted-foreground">
-                <span>{exercises.length} oefeningen</span>
-                <span>{totalSets} sets</span>
-                {totalVolume > 0 && <span>{Math.round(totalVolume).toLocaleString()} kg volume</span>}
-                {workout.rating && (
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(i => (
-                      <span key={i} className={i <= workout.rating! ? 'text-yellow-400' : 'text-muted-foreground/30'}>★</span>
-                    ))}
+              <div className={`mt-3 pt-3 border-t ${workout.photo_url ? 'flex gap-3' : ''}`}>
+                {workout.photo_url && (
+                  <div className="shrink-0">
+                    <img
+                      src={workout.photo_url}
+                      alt="Workout"
+                      className="w-28 h-36 object-cover rounded-lg"
+                    />
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Workout photo */}
-            {workout.photo_url && (
-              <div className="mt-2">
-                <img src={workout.photo_url} alt="Workout" className="w-full max-h-48 object-cover rounded-lg" />
-                <Button variant="outline" size="sm" className="mt-1 gap-1 text-xs" onClick={handleShareInstagram}>
-                  <Instagram className="h-3 w-3" />
-                  Deel op Instagram
-                </Button>
+                <div className="flex-1 space-y-1.5 text-sm">
+                  {duration > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">Duur</span>
+                      <span className="font-medium tabular-nums text-xs">{duration} min</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">Oefeningen</span>
+                    <span className="font-medium tabular-nums text-xs">{exercises.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">Sets</span>
+                    <span className="font-medium tabular-nums text-xs">{totalSets}</span>
+                  </div>
+                  {totalVolume > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">Volume</span>
+                      <span className="font-medium tabular-nums text-xs">{Math.round(totalVolume).toLocaleString()} kg</span>
+                    </div>
+                  )}
+                  {workout.rating && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">Beoordeling</span>
+                      <div className="flex gap-0.5">
+                        {[1,2,3,4,5].map(i => (
+                          <span key={i} className={`text-xs ${i <= workout.rating! ? 'text-yellow-400' : 'text-muted-foreground/30'}`}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {workout.notes && (
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-border/50 line-clamp-3">
+                      {workout.notes}
+                    </p>
+                  )}
+                  {workout.photo_url && (
+                    <Button variant="outline" size="sm" className="w-full h-7 gap-1 text-[11px] mt-1" onClick={handleShareInstagram}>
+                      <Instagram className="h-3 w-3" />
+                      Deel op Instagram
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
