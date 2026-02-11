@@ -281,6 +281,66 @@ export type Database = {
         }
         Relationships: []
       }
+      food_logs: {
+        Row: {
+          brand: string | null
+          calories: number | null
+          carbs_g: number | null
+          created_at: string
+          fat_g: number | null
+          fatsecret_food_id: string | null
+          fiber_g: number | null
+          food_name: string
+          id: string
+          log_date: string
+          meal_type: string
+          protein_g: number | null
+          quantity: number
+          serving_description: string | null
+          serving_size: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          calories?: number | null
+          carbs_g?: number | null
+          created_at?: string
+          fat_g?: number | null
+          fatsecret_food_id?: string | null
+          fiber_g?: number | null
+          food_name: string
+          id?: string
+          log_date?: string
+          meal_type?: string
+          protein_g?: number | null
+          quantity?: number
+          serving_description?: string | null
+          serving_size?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          calories?: number | null
+          carbs_g?: number | null
+          created_at?: string
+          fat_g?: number | null
+          fatsecret_food_id?: string | null
+          fiber_g?: number | null
+          food_name?: string
+          id?: string
+          log_date?: string
+          meal_type?: string
+          protein_g?: number | null
+          quantity?: number
+          serving_description?: string | null
+          serving_size?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       measurements: {
         Row: {
           bicep_left_cm: number | null

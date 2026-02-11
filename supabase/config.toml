@@ -21,3 +21,6 @@ verify_jwt = true
 [functions.fitbit-sync-incremental]
 verify_jwt = false
 
+[functions.fatsecret-search]
+verify_jwt = false
+
