@@ -16,6 +16,7 @@ import Health from "./pages/Health";
 import Sleep from "./pages/Sleep";
 import Workouts from "./pages/Workouts";
 import WorkoutDetail from "./pages/WorkoutDetail";
+import RoutineEditor from "./pages/RoutineEditor";
 import ExerciseLibrary from "./pages/ExerciseLibrary";
 import ExerciseDetail from "./pages/ExerciseDetail";
 import Admin from "./pages/Admin";
@@ -45,6 +46,8 @@ const App = () => (
                 <Route path="/sleep" element={<Sleep />} />
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/workouts/:id" element={<WorkoutDetail />} />
+                <Route path="/routines/new" element={<RoutineEditor />} />
+                <Route path="/routines/:id" element={<RoutineEditor />} />
                 <Route path="/exercises" element={<ExerciseLibrary />} />
                 <Route path="/exercises/:id" element={<ExerciseDetail />} />
                 <Route path="/admin" element={<Admin />} />
