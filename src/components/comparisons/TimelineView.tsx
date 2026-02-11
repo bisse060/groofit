@@ -54,7 +54,7 @@ export default function TimelineView({
             const backPhoto = getPhotoByType(photos, 'back');
 
             return (
-              <Card key={measurement.id} className="flex-shrink-0 w-80">
+              <Card key={measurement.id} className="flex-shrink-0 w-64 md:w-72">
                 <CardContent className="p-4 space-y-3">
                   <div className="text-center">
                     <h3 className="font-semibold text-lg">

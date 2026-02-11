@@ -231,7 +231,7 @@ export default function Comparisons() {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-semibold">{t('comparisons.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">Vergelijk metingen om je voortgang te zien</p>
@@ -306,7 +306,7 @@ export default function Comparisons() {
                     </div>
 
                     {/* Photos side by side */}
-                    <div className="grid grid-cols-2 gap-2 md:gap-4">
+                    <div className="grid grid-cols-2 gap-2 md:gap-6 max-w-2xl mx-auto">
                       {/* First Measurement */}
                       <div className="space-y-2">
                         <div className="text-center">
@@ -321,7 +321,7 @@ export default function Comparisons() {
                               <WatermarkedImage 
                                 src={photo} 
                                 alt={currentPhotoType}
-                                className="w-full aspect-[3/5] object-contain rounded bg-muted"
+                                className="w-full aspect-[3/5] object-contain rounded bg-muted md:max-h-[500px]"
                               />
                             ) : (
                               <div className="w-full aspect-[3/5] bg-muted rounded flex items-center justify-center">
@@ -346,7 +346,7 @@ export default function Comparisons() {
                               <WatermarkedImage 
                                 src={photo} 
                                 alt={currentPhotoType}
-                                className="w-full aspect-[3/5] object-contain rounded bg-muted"
+                                className="w-full aspect-[3/5] object-contain rounded bg-muted md:max-h-[500px]"
                               />
                             ) : (
                               <div className="w-full aspect-[3/5] bg-muted rounded flex items-center justify-center">

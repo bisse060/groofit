@@ -34,7 +34,7 @@ export default function Health() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-semibold">{t('nav.health')}</h1>
           <p className="text-sm text-muted-foreground mt-1">Analyses op basis van je Fitbit data (90 dagen)</p>
