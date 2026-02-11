@@ -571,7 +571,9 @@ export default function WorkoutDetail() {
                     </tr>
                   </thead>
                   <tbody>
-                    {exercise.sets.map((set) => (
+                    {exercise.sets.map((set) => {
+                      const lastSet = exercise.lastTime?.sets.find(s => s.set_number === set.set_number);
+                      return (
                       <tr key={set.id} className={`border-b last:border-0 ${set.completed ? 'bg-success/5' : ''}`}>
                         <td className="p-1.5 text-xs text-muted-foreground">{set.set_number}</td>
                         <td className="p-1.5">
@@ -581,6 +583,7 @@ export default function WorkoutDetail() {
                             value={set.weight ?? ''}
                             onChange={(e) => updateSet(set.id, 'weight', parseFloat(e.target.value) || null)}
                             className="w-16 h-7 text-sm"
+                            placeholder={lastSet?.weight?.toString() ?? ''}
                             disabled={!canEdit}
                           />
                         </td>
@@ -590,6 +593,7 @@ export default function WorkoutDetail() {
                             value={set.reps ?? ''}
                             onChange={(e) => updateSet(set.id, 'reps', parseInt(e.target.value) || null)}
                             className="w-14 h-7 text-sm"
+                            placeholder={lastSet?.reps?.toString() ?? ''}
                             disabled={!canEdit}
                           />
                         </td>
@@ -610,7 +614,8 @@ export default function WorkoutDetail() {
                           />
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
