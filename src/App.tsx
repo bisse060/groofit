@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import DailyLogs from "./pages/DailyLogs";
 import Measurements from "./pages/Measurements";
 import Comparisons from "./pages/Comparisons";
+import Health from "./pages/Health";
 import Sleep from "./pages/Sleep";
 import Workouts from "./pages/Workouts";
 import WorkoutDetail from "./pages/WorkoutDetail";
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/daily-logs" element={<DailyLogs />} />
                 <Route path="/measurements" element={<Measurements />} />
                 <Route path="/comparisons" element={<Comparisons />} />
+                <Route path="/health" element={<Health />} />
                 <Route path="/sleep" element={<Sleep />} />
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/workouts/:id" element={<WorkoutDetail />} />

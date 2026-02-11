@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Dumbbell, Camera, User, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, Dumbbell, Camera, User, Shield, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,8 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const baseNavItems = [
   { path: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
   { path: '/daily-logs', icon: FileText, labelKey: 'nav.dailyLogs' },
+  { path: '/health', icon: HeartPulse, labelKey: 'nav.health' },
   { path: '/workouts', icon: Dumbbell, labelKey: 'nav.workouts' },
-  { path: '/comparisons', icon: Camera, labelKey: 'nav.comparisons' },
 ];
 
 export default function BottomNav() {
