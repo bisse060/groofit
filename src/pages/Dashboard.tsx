@@ -11,7 +11,7 @@ import WeightTrendChart from '@/components/charts/WeightTrendChart';
 import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
 import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
 import SleepSummaryCard from '@/components/dashboard/SleepSummaryCard';
-import SleepAnalysis from '@/components/dashboard/SleepAnalysis';
+import FitbitAnalysisTabs from '@/components/dashboard/FitbitAnalysisTabs';
 import LastWorkoutCard from '@/components/dashboard/LastWorkoutCard';
 
 export default function Dashboard() {
@@ -219,8 +219,8 @@ export default function Dashboard() {
         {/* Last Workout */}
         <LastWorkoutCard />
 
-        {/* Sleep Analysis */}
-        <SleepAnalysis />
+        {/* Fitbit Analysis (Sleep + Health) */}
+        <FitbitAnalysisTabs />
 
         {/* Weekly/Monthly Highlights */}
         <CrossDayHighlights />
