@@ -103,15 +103,17 @@ serve(async (req) => {
     };
 
     const signature = await signOAuth1Request('POST', requestTokenUrl, oauthParams, consumerSecret);
-    oauthParams.oauth_signature = signature;
 
-    // Debug (no secrets): verify params are present
-    const queryParams = new URLSearchParams(oauthParams);
-    console.log('fatsecret-auth-start request_token: consumer_key_len=', consumerKey.length);
-    console.log('fatsecret-auth-start request_token: has_consumer_key_param=', queryParams.has('oauth_consumer_key'));
+    // Send all params (including signature) as form-encoded POST body
+    const bodyParams = new URLSearchParams(oauthParams);
+    bodyParams.set('oauth_signature', signature);
 
-    const rtResponse = await fetch(`${requestTokenUrl}?${queryParams.toString()}`, {
+    console.log('fatsecret-auth-start: POST to', requestTokenUrl);
+
+    const rtResponse = await fetch(requestTokenUrl, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: bodyParams.toString(),
     });
 
     if (!rtResponse.ok) {
