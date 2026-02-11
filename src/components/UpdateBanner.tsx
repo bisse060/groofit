@@ -8,7 +8,7 @@ export default function UpdateBanner() {
   if (!updateAvailable) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-primary text-primary-foreground px-4 py-2.5 shadow-lg animate-in slide-in-from-top duration-300">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-primary text-primary-foreground px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] shadow-lg animate-in slide-in-from-top duration-300">
       <div className="max-w-lg mx-auto flex items-center gap-3">
         <RefreshCw className="h-4 w-4 shrink-0" />
         <div className="flex-1 min-w-0">
