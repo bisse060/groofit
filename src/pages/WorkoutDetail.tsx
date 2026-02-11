@@ -14,6 +14,17 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import ExercisePickerDialog from '@/components/workouts/ExercisePickerDialog';
 import FinishWorkoutDialog from '@/components/workouts/FinishWorkoutDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface WorkoutSet {
   id: string;
@@ -305,10 +316,34 @@ export default function WorkoutDetail() {
 
   const handleShareInstagram = () => {
     if (workout?.photo_url) {
-      // Open Instagram with deep link or web
       const instagramUrl = `https://www.instagram.com/`;
       window.open(instagramUrl, '_blank');
       toast.info('Download de foto en deel deze op Instagram!');
+    }
+  };
+
+  const handleDeleteWorkout = async () => {
+    try {
+      // Delete sets, exercises, then workout (cascade not automatic via RLS)
+      for (const ex of exercises) {
+        await supabase.from('workout_sets').delete().eq('workout_exercise_id', ex.id);
+      }
+      await supabase.from('workout_exercises').delete().eq('workout_id', id);
+      
+      // Delete photo from storage if exists
+      if (workout?.photo_url) {
+        const path = `${user?.id}/${id}/workout.${workout.photo_url.split('.').pop()}`;
+        await supabase.storage.from('workout-photos').remove([path]);
+      }
+
+      const { error } = await supabase.from('workouts').delete().eq('id', id);
+      if (error) throw error;
+
+      toast.success('Workout verwijderd');
+      navigate('/workouts');
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+      toast.error('Fout bij het verwijderen van workout');
     }
   };
 
@@ -366,6 +401,27 @@ export default function WorkoutDetail() {
                 Klaar
               </Button>
             )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Workout verwijderen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Dit verwijdert de workout inclusief alle oefeningen en sets. Dit kan niet ongedaan worden gemaakt.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteWorkout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Verwijderen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             {isActive && (
               <Button onClick={() => setShowFinishDialog(true)} size="sm">
                 <Check className="h-4 w-4 mr-1" />
