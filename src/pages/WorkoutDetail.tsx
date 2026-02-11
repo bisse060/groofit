@@ -342,48 +342,54 @@ export default function WorkoutDetail() {
         img.src = imgUrl;
       });
 
-      const footerHeight = 60;
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
-      canvas.height = img.height + footerHeight;
+      canvas.height = img.height;
       const ctx = canvas.getContext('2d')!;
 
       // Draw original image
       ctx.drawImage(img, 0, 0);
 
-      // Draw dark footer
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(0, img.height, canvas.width, footerHeight);
-
       // Load logo
       const logoImg = new Image();
-      const { default: logoSrc } = await import('@/assets/grofit-logo.png');
+      const { default: logoSrc } = await import('@/assets/grofit-logo-wide.png');
       
       await new Promise<void>((resolve) => {
         logoImg.onload = () => resolve();
-        logoImg.onerror = () => resolve(); // continue without logo on error
+        logoImg.onerror = () => resolve();
         logoImg.src = logoSrc;
       });
 
-      // Draw "captured with" text + logo centered
+      // Draw watermark in bottom-right corner
+      const padding = img.width * 0.04;
       const text = 'captured with';
-      const fontSize = Math.max(14, Math.round(canvas.width * 0.025));
+      const fontSize = Math.max(16, Math.round(canvas.width * 0.035));
       ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
-      ctx.fillStyle = '#888888';
       ctx.textBaseline = 'middle';
 
       const textWidth = ctx.measureText(text).width;
-      const logoH = footerHeight * 0.5;
+      const logoH = fontSize * 1.6;
       const logoW = logoImg.naturalWidth ? (logoImg.naturalWidth / logoImg.naturalHeight) * logoH : 0;
-      const gap = 6;
+      const gap = 8;
       const totalW = textWidth + gap + logoW;
-      const startX = (canvas.width - totalW) / 2;
-      const centerY = img.height + footerHeight / 2;
+      const blockH = logoH + padding;
+      const x = canvas.width - totalW - padding;
+      const y = canvas.height - blockH;
 
-      ctx.fillText(text, startX, centerY);
+      // Semi-transparent background behind watermark
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      const bgPadX = 12;
+      const bgPadY = 8;
+      ctx.beginPath();
+      ctx.roundRect(x - bgPadX, y - bgPadY, totalW + bgPadX * 2, blockH + bgPadY, 8);
+      ctx.fill();
+
+      const centerY = y + blockH / 2;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText(text, x, centerY);
 
       if (logoImg.naturalWidth) {
-        ctx.drawImage(logoImg, startX + textWidth + gap, centerY - logoH / 2, logoW, logoH);
+        ctx.drawImage(logoImg, x + textWidth + gap, centerY - logoH / 2, logoW, logoH);
       }
 
       URL.revokeObjectURL(imgUrl);
