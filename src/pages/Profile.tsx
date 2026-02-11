@@ -127,9 +127,12 @@ export default function Profile() {
       }
 
       // Load FatSecret credentials via secure RPC
-      const { data: fsCreds } = await supabase
-        .rpc('get_fatsecret_connection_status', { p_user_id: user?.id })
-        .single();
+      const { data: fsCredsArr, error: fsError } = await supabase
+        .rpc('get_fatsecret_connection_status', { p_user_id: user?.id });
+
+      if (fsError) throw fsError;
+
+      const fsCreds = Array.isArray(fsCredsArr) ? fsCredsArr[0] : fsCredsArr;
 
       if (fsCreds) {
         setFatsecretCredentials({
@@ -137,6 +140,8 @@ export default function Profile() {
           connected_at: fsCreds.connected_at,
           last_sync_at: fsCreds.last_sync_at,
         });
+      } else {
+        setFatsecretCredentials({ fatsecret_user_id: null, connected_at: null, last_sync_at: null });
       }
     } catch (error: any) {
       toast.error(error.message);

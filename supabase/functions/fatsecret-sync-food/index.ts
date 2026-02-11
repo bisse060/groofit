@@ -31,8 +31,10 @@ async function signOAuth1Request(
   consumerSecret: string,
   tokenSecret: string
 ): Promise<string> {
-  const sortedParams = Object.keys(params).sort().map(k => `${percentEncode(k)}=${percentEncode(params[k])}`).join('&');
-  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(sortedParams)}`;
+  const encodedEntries = Object.entries(params).map(([k, v]) => [percentEncode(k), percentEncode(v)] as const);
+  encodedEntries.sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])));
+  const normalizedParams = encodedEntries.map(([k, v]) => `${k}=${v}`).join('&');
+  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(normalizedParams)}`;
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
 
   const encoder = new TextEncoder();

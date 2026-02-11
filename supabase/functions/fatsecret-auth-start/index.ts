@@ -32,8 +32,10 @@ async function signOAuth1Request(
   tokenSecret: string = ''
 ): Promise<string> {
   // Sort params and create base string
-  const sortedParams = Object.keys(params).sort().map(k => `${percentEncode(k)}=${percentEncode(params[k])}`).join('&');
-  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(sortedParams)}`;
+  const encodedEntries = Object.entries(params).map(([k, v]) => [percentEncode(k), percentEncode(v)] as const);
+  encodedEntries.sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])));
+  const normalizedParams = encodedEntries.map(([k, v]) => `${k}=${v}`).join('&');
+  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(normalizedParams)}`;
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
 
   // HMAC-SHA1
@@ -103,19 +105,22 @@ serve(async (req) => {
     const signature = await signOAuth1Request('POST', requestTokenUrl, oauthParams, consumerSecret);
     oauthParams.oauth_signature = signature;
 
-    // Build Authorization header
-    const authHeaderValue = 'OAuth ' + Object.keys(oauthParams)
-      .map(k => `${percentEncode(k)}="${percentEncode(oauthParams[k])}"`)
-      .join(', ');
+    // Debug (no secrets): verify params are present
+    const queryParams = new URLSearchParams(oauthParams);
+    console.log('fatsecret-auth-start request_token: consumer_key_len=', consumerKey.length);
+    console.log('fatsecret-auth-start request_token: has_consumer_key_param=', queryParams.has('oauth_consumer_key'));
 
-    const rtResponse = await fetch(requestTokenUrl, {
+    const rtResponse = await fetch(`${requestTokenUrl}?${queryParams.toString()}`, {
       method: 'POST',
-      headers: { 'Authorization': authHeaderValue },
     });
 
     if (!rtResponse.ok) {
       const errorText = await rtResponse.text();
-      console.error('Request token error:', errorText);
+      console.error('Request token failed:', {
+        status: rtResponse.status,
+        url: rtResponse.url,
+        body: errorText,
+      });
       throw new Error('Failed to get request token');
     }
 

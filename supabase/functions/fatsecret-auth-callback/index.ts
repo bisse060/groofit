@@ -31,8 +31,10 @@ async function signOAuth1Request(
   consumerSecret: string,
   tokenSecret: string = ''
 ): Promise<string> {
-  const sortedParams = Object.keys(params).sort().map(k => `${percentEncode(k)}=${percentEncode(params[k])}`).join('&');
-  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(sortedParams)}`;
+  const encodedEntries = Object.entries(params).map(([k, v]) => [percentEncode(k), percentEncode(v)] as const);
+  encodedEntries.sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])));
+  const normalizedParams = encodedEntries.map(([k, v]) => `${k}=${v}`).join('&');
+  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(normalizedParams)}`;
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
 
   const encoder = new TextEncoder();
@@ -118,16 +120,14 @@ serve(async (req) => {
       oauth_verifier: oauth_verifier,
     };
 
-    const signature = await signOAuth1Request('POST', accessTokenUrl, oauthParams, consumerSecret, requestTokenSecret);
-    oauthParams.oauth_signature = signature;
+    // Access Token endpoint expects parameters (GET). Send as query string.
+    const signature = await signOAuth1Request('GET', accessTokenUrl, oauthParams, consumerSecret, requestTokenSecret);
 
-    const authHeaderValue = 'OAuth ' + Object.keys(oauthParams)
-      .map(k => `${percentEncode(k)}="${percentEncode(oauthParams[k])}"`)
-      .join(', ');
+    const queryParams = new URLSearchParams(oauthParams);
+    queryParams.set('oauth_signature', signature);
 
-    const atResponse = await fetch(accessTokenUrl, {
-      method: 'POST',
-      headers: { 'Authorization': authHeaderValue },
+    const atResponse = await fetch(`${accessTokenUrl}?${queryParams.toString()}`, {
+      method: 'GET',
     });
 
     if (!atResponse.ok) {
