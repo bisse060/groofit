@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import logoWide from '@/assets/grofit-logo-wide.png';
 import BottomNav from '@/components/navigation/BottomNav';
+import InstallPrompt from '@/components/InstallPrompt';
 import {
   LayoutDashboard,
   User,
@@ -135,6 +136,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Bottom Navigation - Mobile only */}
       <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }
