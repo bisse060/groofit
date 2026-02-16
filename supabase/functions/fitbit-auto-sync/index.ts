@@ -34,11 +34,7 @@ serve(async (req) => {
     // Get all users with Fitbit connected
     const { data: credentials, error: credentialsError } = await supabaseAdmin
       .from('fitbit_credentials')
-      .select(`
-        user_id,
-        fitbit_user_id,
-        profiles!inner(full_name)
-      `)
+      .select('user_id, fitbit_user_id')
       .not('fitbit_user_id', 'is', null);
 
     if (credentialsError) {
@@ -69,8 +65,7 @@ serve(async (req) => {
     // Sync each user
     for (const credential of credentials) {
       try {
-        const profile = credential.profiles as any;
-        console.log(`Syncing user ${profile.full_name} (${credential.user_id})...`);
+        console.log(`Syncing user ${credential.user_id}...`);
         
         // Sync activity data
         const syncData = await syncUserData(
@@ -86,7 +81,6 @@ serve(async (req) => {
         console.log(`Sync successful for user ${credential.user_id}`);
         results.push({
           userId: credential.user_id,
-          name: profile.full_name,
           success: true,
           data: syncData
         });
@@ -94,7 +88,6 @@ serve(async (req) => {
         console.error(`Error syncing user ${credential.user_id}:`, userError);
         results.push({
           userId: credential.user_id,
-          name: (credential.profiles as any)?.full_name || 'Unknown',
           success: false,
           error: userError instanceof Error ? userError.message : 'Unknown error'
         });
