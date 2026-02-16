@@ -55,34 +55,45 @@ serve(async (req) => {
       );
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // Sync today + last 3 days to catch any missed days
+    const datesToSync: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      datesToSync.push(d.toISOString().split('T')[0]);
+    }
     
     const results = [];
 
     // Sync each user
     for (const credential of credentials) {
       try {
-        console.log(`Syncing user ${credential.user_id}...`);
+        console.log(`Syncing user ${credential.user_id} for ${datesToSync.length} days...`);
         
-        // Sync activity data
-        const syncData = await syncUserData(
-          supabaseAdmin,
-          credential.user_id,
-          today
-        );
+        const userResults = [];
+        for (const date of datesToSync) {
+          try {
+            const syncData = await syncUserData(supabaseAdmin, credential.user_id, date);
+            userResults.push({ date, success: true, steps: syncData.steps });
+          } catch (dateError) {
+            console.error(`Error syncing ${date} for user ${credential.user_id}:`, dateError);
+            userResults.push({ date, success: false });
+          }
+          // Small delay to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
 
-        // Sync sleep data for yesterday and today
-        await syncSleepData(supabaseAdmin, credential.user_id, yesterdayStr);
-        await syncSleepData(supabaseAdmin, credential.user_id, today);
+        // Sync sleep data for same period
+        for (const date of datesToSync) {
+          await syncSleepData(supabaseAdmin, credential.user_id, date);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
 
         console.log(`Sync successful for user ${credential.user_id}`);
         results.push({
           userId: credential.user_id,
           success: true,
-          data: syncData
+          days: userResults
         });
       } catch (userError) {
         console.error(`Error syncing user ${credential.user_id}:`, userError);
