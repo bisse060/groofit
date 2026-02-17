@@ -105,7 +105,30 @@ export default function ExercisePickerDialog({
       const { data, error } = await query;
 
       if (error) throw error;
-      setExercises(data || []);
+
+      // Generate signed URLs for private bucket images
+      const exercisesWithSignedUrls = await Promise.all(
+        (data || []).map(async (exercise) => {
+          if (exercise.image_url) {
+            let filePath = exercise.image_url;
+            if (filePath.includes('exercise-images/')) {
+              filePath = filePath.split('exercise-images/')[1];
+            }
+            if (!filePath.startsWith('http')) {
+              const { data: signedData } = await supabase.storage
+                .from('exercise-images')
+                .createSignedUrl(filePath, 3600);
+              if (signedData?.signedUrl) {
+                return { ...exercise, image_url: signedData.signedUrl };
+              }
+              return { ...exercise, image_url: null };
+            }
+          }
+          return exercise;
+        })
+      );
+
+      setExercises(exercisesWithSignedUrls);
     } catch (error) {
       console.error('Error loading exercises:', error);
       toast.error('Fout bij het laden van oefeningen');
