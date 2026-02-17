@@ -104,34 +104,42 @@ export default function ExerciseDetail() {
 
   // Load signed URL for stored exercise images
   useEffect(() => {
-    if (exercise?.image_url && exercise.image_url.includes('exercise-images')) {
-      loadSignedUrl(exercise.image_url);
+    if (exercise?.image_url) {
+      // If it's a storage path (not a full URL), generate signed URL
+      if (!exercise.image_url.startsWith('http')) {
+        loadSignedUrl(exercise.image_url);
+      } else if (exercise.image_url.includes('exercise-images')) {
+        // Legacy: extract path from full URL
+        const patterns = ['/object/public/exercise-images/', '/object/sign/exercise-images/'];
+        let filePath: string | null = null;
+        for (const marker of patterns) {
+          const idx = exercise.image_url.indexOf(marker);
+          if (idx !== -1) {
+            filePath = exercise.image_url.substring(idx + marker.length).split('?')[0];
+            break;
+          }
+        }
+        if (filePath) {
+          loadSignedUrl(filePath);
+        } else {
+          setSignedImageUrl(exercise.image_url);
+        }
+      } else {
+        setSignedImageUrl(exercise.image_url);
+      }
     } else {
-      setSignedImageUrl(exercise?.image_url || null);
+      setSignedImageUrl(null);
     }
   }, [exercise?.image_url]);
 
-  const loadSignedUrl = async (storedUrl: string) => {
+  const loadSignedUrl = async (filePath: string) => {
     try {
-      const patterns = ['/object/public/exercise-images/', '/object/sign/exercise-images/'];
-      let filePath: string | null = null;
-      for (const marker of patterns) {
-        const idx = storedUrl.indexOf(marker);
-        if (idx !== -1) {
-          filePath = storedUrl.substring(idx + marker.length).split('?')[0];
-          break;
-        }
-      }
-      if (!filePath) {
-        setSignedImageUrl(storedUrl);
-        return;
-      }
       const { data, error } = await supabase.storage
         .from('exercise-images')
         .createSignedUrl(filePath, 3600);
-      setSignedImageUrl(error ? storedUrl : data.signedUrl);
+      setSignedImageUrl(error ? null : data.signedUrl);
     } catch {
-      setSignedImageUrl(storedUrl);
+      setSignedImageUrl(null);
     }
   };
 
@@ -178,11 +186,10 @@ export default function ExerciseDetail() {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('exercise-images')
-        .getPublicUrl(filePath);
-
-      setExercise(prev => prev ? { ...prev, image_url: publicUrl } : prev);
+      // Store only the path, not the full URL
+      setExercise(prev => prev ? { ...prev, image_url: filePath } : prev);
+      // Generate signed URL for immediate display
+      loadSignedUrl(filePath);
       toast.success('Afbeelding geüpload');
     } catch (error) {
       console.error('Upload error:', error);
