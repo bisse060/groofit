@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera, UtensilsCrossed } from 'lucide-react';
+import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera, UtensilsCrossed, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useState } from 'react';
 
 const baseNavItems = [
@@ -24,11 +25,16 @@ export default function BottomNav() {
   const location = useLocation();
   const { t } = useLanguage();
   const { isAdmin } = useAuth();
+  const { hasFlag } = useFeatureFlags();
   const [showMore, setShowMore] = useState(false);
 
-  const allMoreItems = isAdmin 
+  let allMoreItems = isAdmin 
     ? [...moreItems, { path: '/admin', icon: Shield, labelKey: 'nav.admin' }]
-    : moreItems;
+    : [...moreItems];
+
+  if (hasFlag('cycle_support')) {
+    allMoreItems.push({ path: '/performance', icon: FlaskConical, labelKey: 'nav.performance' });
+  }
 
   const isMoreActive = allMoreItems.some(
     item => location.pathname === item.path || location.pathname.startsWith(item.path)

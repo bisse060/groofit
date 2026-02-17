@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon, Image, Calendar, Weight, Ruler, Crown } from 'lucide-react';
+import { Users, Activity, TrendingUp, Trash2, Eye, Dumbbell, Moon, Image, Calendar, Weight, Ruler, Crown, FlaskConical } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,6 +45,7 @@ export default function Admin() {
     sleepLogs: [],
     photos: [],
   });
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -92,7 +94,36 @@ export default function Admin() {
     }
   };
 
+  const loadFeatureFlag = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_feature_flags')
+      .select('enabled')
+      .eq('user_id', userId)
+      .eq('feature_key', 'cycle_support')
+      .maybeSingle();
+    setFeatureFlags(prev => ({ ...prev, [userId]: !!data?.enabled }));
+  };
+
+  const toggleCycleSupport = async (userId: string, enabled: boolean) => {
+    if (enabled) {
+      const { error } = await supabase
+        .from('user_feature_flags')
+        .upsert({ user_id: userId, feature_key: 'cycle_support', enabled: true }, { onConflict: 'user_id,feature_key' });
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase
+        .from('user_feature_flags')
+        .update({ enabled: false })
+        .eq('user_id', userId)
+        .eq('feature_key', 'cycle_support');
+      if (error) { toast.error(error.message); return; }
+    }
+    setFeatureFlags(prev => ({ ...prev, [userId]: enabled }));
+    toast.success(enabled ? 'Cycle Support geactiveerd' : 'Cycle Support gedeactiveerd');
+  };
+
   const loadUserDetails = async (userId: string) => {
+    loadFeatureFlag(userId);
     try {
       const [measurementsRes, logsRes, workoutsRes, sleepRes, photosRes] = await Promise.all([
         supabase
@@ -379,6 +410,21 @@ export default function Admin() {
                             </SheetHeader>
                             
                             <div className="mt-6 space-y-6">
+                              {/* Feature Flags */}
+                              {selectedUser && (
+                                <div className="space-y-2">
+                                  <h3 className="font-semibold flex items-center gap-2"><FlaskConical className="h-4 w-4" /> Feature Flags</h3>
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={`cycle-${selectedUser.id}`}
+                                      checked={featureFlags[selectedUser.id] || false}
+                                      onCheckedChange={(checked) => toggleCycleSupport(selectedUser.id, !!checked)}
+                                    />
+                                    <label htmlFor={`cycle-${selectedUser.id}`} className="text-sm">Cycle Support</label>
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Profile Info */}
                               <div className="space-y-2">
                                 <h3 className="font-semibold">Profiel Informatie</h3>

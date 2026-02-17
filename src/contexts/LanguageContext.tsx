@@ -26,6 +26,7 @@ export const translations: Translations = {
   'nav.logout': { nl: 'Uitloggen', en: 'Logout' },
   'nav.more': { nl: 'Meer', en: 'More' },
   'nav.nutrition': { nl: 'Voeding', en: 'Nutrition' },
+  'nav.performance': { nl: 'Cycle Support', en: 'Cycle Support' },
   
   // Auth
   'auth.login': { nl: 'Inloggen', en: 'Login' },

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import logoWide from '@/assets/grofit-logo-wide.png';
 import BottomNav from '@/components/navigation/BottomNav';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -19,6 +20,7 @@ import {
   BookOpen,
   Sun,
   HeartPulse,
+  FlaskConical,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -29,6 +31,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { signOut, isAdmin } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { hasFlag } = useFeatureFlags();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
@@ -46,6 +49,9 @@ export default function Layout({ children }: LayoutProps) {
 
   if (isAdmin) {
     navItems.push({ path: '/admin', icon: Shield, label: t('nav.admin') });
+  }
+  if (hasFlag('cycle_support')) {
+    navItems.push({ path: '/performance', icon: FlaskConical, label: 'Cycle Support' });
   }
 
   const toggleTheme = () => {
