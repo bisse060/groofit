@@ -72,20 +72,19 @@ export default function Performance() {
     setLoading(false);
   };
 
-  const loadCurrentData = async () => {
+  const loadCurrentData = async (startDate?: string) => {
     if (!user) return null;
 
-    const today = new Date().toISOString().split('T')[0];
-    const thirtyDaysAgo = new Date();
+    const refDate = startDate || new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(refDate);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
 
-    const [profileRes, measurementRes, sleepRes, dailyLogsRes, workoutsRes] = await Promise.all([
-      supabase.from('profiles').select('current_weight').eq('id', user.id).single(),
-      supabase.from('measurements').select('*').eq('user_id', user.id).order('measurement_date', { ascending: false }).limit(1),
-      supabase.from('sleep_logs').select('score').eq('user_id', user.id).gte('date', thirtyDaysAgoStr).lte('date', today),
+    const [measurementRes, sleepRes, dailyLogsRes, workoutsRes] = await Promise.all([
+      supabase.from('measurements').select('*').eq('user_id', user.id).lte('measurement_date', refDate).order('measurement_date', { ascending: false }).limit(1),
+      supabase.from('sleep_logs').select('score').eq('user_id', user.id).gte('date', thirtyDaysAgoStr).lte('date', refDate),
       supabase.from('daily_logs').select('body_fat_percentage').eq('user_id', user.id).order('log_date', { ascending: false }).limit(1),
-      supabase.from('workouts').select('id, date').eq('user_id', user.id).eq('is_template', false).gte('date', thirtyDaysAgoStr).lte('date', today),
+      supabase.from('workouts').select('id, date').eq('user_id', user.id).eq('is_template', false).gte('date', thirtyDaysAgoStr).lte('date', refDate),
     ]);
 
     const latestMeasurement = measurementRes.data?.[0];
@@ -112,11 +111,12 @@ export default function Performance() {
     }
 
     return {
-      weight: profileRes.data?.current_weight || latestMeasurement?.weight || null,
+      weight: latestMeasurement?.weight != null ? Number(latestMeasurement.weight) : null,
       bodyfat: dailyLogsRes.data?.[0]?.body_fat_percentage || null,
-      chest: latestMeasurement?.chest_cm || null,
-      waist: latestMeasurement?.waist_cm || null,
-      hips: latestMeasurement?.hips_cm || null,
+      chest: latestMeasurement?.chest_cm != null ? Number(latestMeasurement.chest_cm) : null,
+      waist: latestMeasurement?.waist_cm != null ? Number(latestMeasurement.waist_cm) : null,
+      hips: latestMeasurement?.hips_cm != null ? Number(latestMeasurement.hips_cm) : null,
+      shoulder: latestMeasurement?.shoulder_cm != null ? Number(latestMeasurement.shoulder_cm) : null,
       sleep_avg_30d: avgSleep ? Math.round(avgSleep * 10) / 10 : null,
       energy_avg_30d: null,
       training_volume_30d: totalVolume,
@@ -133,7 +133,7 @@ export default function Performance() {
     }
 
     setSaving(true);
-    const baseline = await loadCurrentData();
+    const baseline = await loadCurrentData(newCycle.start_date);
 
     const { error } = await supabase
       .from('performance_cycles')
@@ -402,11 +402,12 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
     notes: cycle.notes || '',
   });
 
-  const baseline = cycle.baseline_snapshot || {};
+  const [computedBaseline, setComputedBaseline] = useState<any>(cycle.baseline_snapshot || {});
+  const baseline = computedBaseline;
   const isActive = !cycle.end_date;
 
   useEffect(() => {
-    loadCurrent();
+    loadBaselineAndCurrent();
   }, []);
 
   // Sync cycle from parent updates
@@ -437,15 +438,31 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
     setShowEdit(false);
   };
 
-  const loadCurrent = async () => {
+  const loadBaselineAndCurrent = async () => {
     const endDate = cycle.end_date || new Date().toISOString().split('T')[0];
 
-    // Fetch ALL measurements during cycle for peak/trend analysis
-    const [allMeasurementsRes, sleepRes, workoutsRes] = await Promise.all([
+    // Fetch baseline measurement (on or before start date) + all measurements during cycle
+    const [baselineMeasurementRes, allMeasurementsRes, sleepRes, workoutsRes] = await Promise.all([
+      supabase.from('measurements').select('*').eq('user_id', userId).lte('measurement_date', cycle.start_date).order('measurement_date', { ascending: false }).limit(1),
       supabase.from('measurements').select('*').eq('user_id', userId).gt('measurement_date', cycle.start_date).lte('measurement_date', endDate).order('measurement_date', { ascending: false }),
       supabase.from('sleep_logs').select('score').eq('user_id', userId).gte('date', cycle.start_date).lte('date', endDate),
       supabase.from('workouts').select('id').eq('user_id', userId).eq('is_template', false).gte('date', cycle.start_date).lte('date', endDate),
     ]);
+
+    // Compute baseline from actual measurement at start date
+    const baselineMeasurement = baselineMeasurementRes.data?.[0];
+    if (baselineMeasurement) {
+      setComputedBaseline({
+        weight: baselineMeasurement.weight != null ? Number(baselineMeasurement.weight) : null,
+        chest: baselineMeasurement.chest_cm != null ? Number(baselineMeasurement.chest_cm) : null,
+        waist: baselineMeasurement.waist_cm != null ? Number(baselineMeasurement.waist_cm) : null,
+        hips: baselineMeasurement.hips_cm != null ? Number(baselineMeasurement.hips_cm) : null,
+        shoulder: baselineMeasurement.shoulder_cm != null ? Number(baselineMeasurement.shoulder_cm) : null,
+        // Keep sleep/volume from stored snapshot as they aren't in measurements
+        sleep_avg_30d: (cycle.baseline_snapshot as any)?.sleep_avg_30d ?? null,
+        training_volume_30d: (cycle.baseline_snapshot as any)?.training_volume_30d ?? null,
+      });
+    }
 
     const allMeasurements = allMeasurementsRes.data || [];
     const latestMeasurement = allMeasurements[0] || null;
