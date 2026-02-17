@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Trash2, Star, Play } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Star, Play, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import {
@@ -75,6 +75,8 @@ export default function ExerciseDetail() {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
   const isNew = id === 'new';
 
   useEffect(() => {
@@ -100,6 +102,33 @@ export default function ExerciseDetail() {
     }
   }, [user, id, isNew]);
 
+  // Load signed URL for stored exercise images
+  useEffect(() => {
+    if (exercise?.image_url && exercise.image_url.includes('exercise-images')) {
+      loadSignedUrl(exercise.image_url);
+    } else {
+      setSignedImageUrl(exercise?.image_url || null);
+    }
+  }, [exercise?.image_url]);
+
+  const loadSignedUrl = async (storedUrl: string) => {
+    try {
+      const marker = '/object/public/exercise-images/';
+      const idx = storedUrl.indexOf(marker);
+      if (idx === -1) {
+        setSignedImageUrl(storedUrl);
+        return;
+      }
+      const filePath = storedUrl.substring(idx + marker.length);
+      const { data, error } = await supabase.storage
+        .from('exercise-images')
+        .createSignedUrl(filePath, 3600);
+      setSignedImageUrl(error ? storedUrl : data.signedUrl);
+    } catch {
+      setSignedImageUrl(storedUrl);
+    }
+  };
+
   const loadExercise = async () => {
     try {
       const { data, error } = await supabase
@@ -118,6 +147,48 @@ export default function ExerciseDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Alleen afbeeldingen zijn toegestaan');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Afbeelding mag maximaal 5MB zijn');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('exercise-images')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('exercise-images')
+        .getPublicUrl(filePath);
+
+      setExercise(prev => prev ? { ...prev, image_url: publicUrl } : prev);
+      toast.success('Afbeelding geüpload');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Fout bij uploaden');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setExercise(prev => prev ? { ...prev, image_url: null } : prev);
+    setSignedImageUrl(null);
   };
 
   const saveExercise = async () => {
@@ -323,21 +394,47 @@ export default function ExerciseDetail() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Afbeelding URL</label>
-              <Input
-                value={exercise.image_url || ''}
-                onChange={(e) => setExercise({ ...exercise, image_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-              />
-              {exercise.image_url && (
-                <div className="aspect-video w-full overflow-hidden rounded-lg border">
+              <label className="text-sm font-medium">Afbeelding</label>
+              {(signedImageUrl || exercise.image_url) && (
+                <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
                   <img
-                    src={exercise.image_url}
+                    src={signedImageUrl || exercise.image_url || ''}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-7 w-7 p-0"
+                    onClick={removeImage}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={uploading}
+                  onClick={() => document.getElementById('exercise-image-upload')?.click()}
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
+                  {uploading ? 'Uploaden...' : 'Upload Afbeelding'}
+                </Button>
+                <input
+                  id="exercise-image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </div>
+              <Input
+                value={exercise.image_url || ''}
+                onChange={(e) => setExercise({ ...exercise, image_url: e.target.value })}
+                placeholder="Of plak een URL: https://example.com/image.jpg"
+              />
             </div>
 
             <div className="space-y-2">
