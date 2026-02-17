@@ -78,12 +78,18 @@ export default function ExerciseLibrary() {
 
       if (error) throw error;
       
-      // Sign image URLs for private bucket
+      // Generate signed URLs for exercise images
       const signed = await Promise.all((data || []).map(async (ex) => {
-        if (ex.image_url && ex.image_url.includes('exercise-images')) {
-          // Extract file path from any URL format (public or signed)
+        if (!ex.image_url) return ex;
+        
+        let filePath: string | null = null;
+        
+        if (!ex.image_url.startsWith('http')) {
+          // New format: just the storage path
+          filePath = ex.image_url;
+        } else if (ex.image_url.includes('exercise-images')) {
+          // Legacy: extract path from full URL
           const patterns = ['/object/public/exercise-images/', '/object/sign/exercise-images/'];
-          let filePath: string | null = null;
           for (const marker of patterns) {
             const idx = ex.image_url.indexOf(marker);
             if (idx !== -1) {
@@ -91,12 +97,13 @@ export default function ExerciseLibrary() {
               break;
             }
           }
-          if (filePath) {
-            const { data: signedData } = await supabase.storage
-              .from('exercise-images')
-              .createSignedUrl(filePath, 3600);
-            return { ...ex, image_url: signedData?.signedUrl || ex.image_url };
-          }
+        }
+        
+        if (filePath) {
+          const { data: signedData } = await supabase.storage
+            .from('exercise-images')
+            .createSignedUrl(filePath, 3600);
+          return { ...ex, image_url: signedData?.signedUrl || ex.image_url };
         }
         return ex;
       }));
