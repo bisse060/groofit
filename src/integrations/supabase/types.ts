@@ -467,6 +467,45 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_cycles: {
+        Row: {
+          baseline_snapshot: Json | null
+          created_at: string | null
+          cycle_type: string | null
+          end_date: string | null
+          goal: string | null
+          id: string
+          name: string | null
+          notes: string | null
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          baseline_snapshot?: Json | null
+          created_at?: string | null
+          cycle_type?: string | null
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          name?: string | null
+          notes?: string | null
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          baseline_snapshot?: Json | null
+          created_at?: string | null
+          cycle_type?: string | null
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          name?: string | null
+          notes?: string | null
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -634,6 +673,30 @@ export type Database = {
           price_monthly?: number | null
           price_yearly?: number | null
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      user_feature_flags: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          feature_key: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          feature_key: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          feature_key?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -854,6 +917,10 @@ export type Database = {
           id: string
           last_sync_at: string
         }[]
+      }
+      has_feature_flag: {
+        Args: { _feature_key: string; _user_id: string }
+        Returns: boolean
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
     }
