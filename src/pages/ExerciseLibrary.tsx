@@ -77,7 +77,24 @@ export default function ExerciseLibrary() {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setExercises(data || []);
+      
+      // Sign image URLs for private bucket
+      const signed = await Promise.all((data || []).map(async (ex) => {
+        if (ex.image_url && ex.image_url.includes('exercise-images')) {
+          const marker = '/object/public/exercise-images/';
+          const idx = ex.image_url.indexOf(marker);
+          if (idx !== -1) {
+            const filePath = ex.image_url.substring(idx + marker.length);
+            const { data: signedData } = await supabase.storage
+              .from('exercise-images')
+              .createSignedUrl(filePath, 3600);
+            return { ...ex, image_url: signedData?.signedUrl || ex.image_url };
+          }
+        }
+        return ex;
+      }));
+      
+      setExercises(signed);
     } catch (error) {
       console.error('Error loading exercises:', error);
       toast.error('Fout bij het laden van oefeningen');
