@@ -434,9 +434,9 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
   const loadCurrent = async () => {
     const endDate = cycle.end_date || new Date().toISOString().split('T')[0];
 
-    const [profileRes, measurementRes, sleepRes, workoutsRes] = await Promise.all([
-      supabase.from('profiles').select('current_weight').eq('id', userId).single(),
-      supabase.from('measurements').select('*').eq('user_id', userId).order('measurement_date', { ascending: false }).limit(1),
+    // Fetch latest measurement up to end date (not global latest)
+    const [measurementRes, sleepRes, workoutsRes] = await Promise.all([
+      supabase.from('measurements').select('*').eq('user_id', userId).lte('measurement_date', endDate).order('measurement_date', { ascending: false }).limit(1),
       supabase.from('sleep_logs').select('score').eq('user_id', userId).gte('date', cycle.start_date).lte('date', endDate),
       supabase.from('workouts').select('id').eq('user_id', userId).eq('is_template', false).gte('date', cycle.start_date).lte('date', endDate),
     ]);
@@ -469,7 +469,7 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
     const daysInCycle = Math.max(1, Math.ceil((end.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
 
     setCurrentData({
-      weight: profileRes.data?.current_weight || latestMeasurement?.weight || null,
+      weight: latestMeasurement?.weight || null,
       chest: latestMeasurement?.chest_cm || null,
       waist: latestMeasurement?.waist_cm || null,
       hips: latestMeasurement?.hips_cm || null,
