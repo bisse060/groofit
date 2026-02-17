@@ -81,10 +81,17 @@ export default function ExerciseLibrary() {
       // Sign image URLs for private bucket
       const signed = await Promise.all((data || []).map(async (ex) => {
         if (ex.image_url && ex.image_url.includes('exercise-images')) {
-          const marker = '/object/public/exercise-images/';
-          const idx = ex.image_url.indexOf(marker);
-          if (idx !== -1) {
-            const filePath = ex.image_url.substring(idx + marker.length);
+          // Extract file path from any URL format (public or signed)
+          const patterns = ['/object/public/exercise-images/', '/object/sign/exercise-images/'];
+          let filePath: string | null = null;
+          for (const marker of patterns) {
+            const idx = ex.image_url.indexOf(marker);
+            if (idx !== -1) {
+              filePath = ex.image_url.substring(idx + marker.length).split('?')[0];
+              break;
+            }
+          }
+          if (filePath) {
             const { data: signedData } = await supabase.storage
               .from('exercise-images')
               .createSignedUrl(filePath, 3600);
