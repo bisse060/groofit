@@ -113,13 +113,19 @@ export default function ExerciseDetail() {
 
   const loadSignedUrl = async (storedUrl: string) => {
     try {
-      const marker = '/object/public/exercise-images/';
-      const idx = storedUrl.indexOf(marker);
-      if (idx === -1) {
+      const patterns = ['/object/public/exercise-images/', '/object/sign/exercise-images/'];
+      let filePath: string | null = null;
+      for (const marker of patterns) {
+        const idx = storedUrl.indexOf(marker);
+        if (idx !== -1) {
+          filePath = storedUrl.substring(idx + marker.length).split('?')[0];
+          break;
+        }
+      }
+      if (!filePath) {
         setSignedImageUrl(storedUrl);
         return;
       }
-      const filePath = storedUrl.substring(idx + marker.length);
       const { data, error } = await supabase.storage
         .from('exercise-images')
         .createSignedUrl(filePath, 3600);
