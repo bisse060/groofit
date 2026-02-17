@@ -434,9 +434,9 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
   const loadCurrent = async () => {
     const endDate = cycle.end_date || new Date().toISOString().split('T')[0];
 
-    // Fetch latest measurement up to end date (not global latest)
+    // Fetch latest measurement AFTER start date and up to end date (to compare against baseline)
     const [measurementRes, sleepRes, workoutsRes] = await Promise.all([
-      supabase.from('measurements').select('*').eq('user_id', userId).lte('measurement_date', endDate).order('measurement_date', { ascending: false }).limit(1),
+      supabase.from('measurements').select('*').eq('user_id', userId).gt('measurement_date', cycle.start_date).lte('measurement_date', endDate).order('measurement_date', { ascending: false }).limit(1),
       supabase.from('sleep_logs').select('score').eq('user_id', userId).gte('date', cycle.start_date).lte('date', endDate),
       supabase.from('workouts').select('id').eq('user_id', userId).eq('is_template', false).gte('date', cycle.start_date).lte('date', endDate),
     ]);
