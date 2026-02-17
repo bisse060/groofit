@@ -341,9 +341,10 @@ function CycleCard({ cycle, onClick }: { cycle: Cycle; onClick: () => void }) {
   );
 }
 
-function DeltaCard({ label, value, unit, icon: Icon, baseline, current }: {
+function DeltaCard({ label, value, unit, icon: Icon, baseline, current, peak, peakLabel }: {
   label: string; value: number | null; unit: string; icon: any;
   baseline?: number | null; current?: number | null;
+  peak?: number | null; peakLabel?: string;
 }) {
   if (value == null && baseline == null && current == null) return null;
 
@@ -370,6 +371,11 @@ function DeltaCard({ label, value, unit, icon: Icon, baseline, current }: {
             {baseline != null && <span>Start: {Math.round(baseline * 10) / 10}{unit}</span>}
             {baseline != null && current != null && <span> → </span>}
             {current != null && <span>Nu: {Math.round(current * 10) / 10}{unit}</span>}
+          </div>
+        )}
+        {peak != null && peak !== current && (
+          <div className="text-[10px] text-primary/70 mt-0.5">
+            {peakLabel || 'Piek'}: {Math.round(peak * 10) / 10}{unit}
           </div>
         )}
       </CardContent>
@@ -434,14 +440,21 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
   const loadCurrent = async () => {
     const endDate = cycle.end_date || new Date().toISOString().split('T')[0];
 
-    // Fetch latest measurement AFTER start date and up to end date (to compare against baseline)
-    const [measurementRes, sleepRes, workoutsRes] = await Promise.all([
-      supabase.from('measurements').select('*').eq('user_id', userId).gt('measurement_date', cycle.start_date).lte('measurement_date', endDate).order('measurement_date', { ascending: false }).limit(1),
+    // Fetch ALL measurements during cycle for peak/trend analysis
+    const [allMeasurementsRes, sleepRes, workoutsRes] = await Promise.all([
+      supabase.from('measurements').select('*').eq('user_id', userId).gt('measurement_date', cycle.start_date).lte('measurement_date', endDate).order('measurement_date', { ascending: false }),
       supabase.from('sleep_logs').select('score').eq('user_id', userId).gte('date', cycle.start_date).lte('date', endDate),
       supabase.from('workouts').select('id').eq('user_id', userId).eq('is_template', false).gte('date', cycle.start_date).lte('date', endDate),
     ]);
 
-    const latestMeasurement = measurementRes.data?.[0];
+    const allMeasurements = allMeasurementsRes.data || [];
+    const latestMeasurement = allMeasurements[0] || null;
+
+    // Calculate peak values during cycle
+    const peakWeight = allMeasurements.reduce((max, m) => m.weight != null && (max == null || Number(m.weight) > max) ? Number(m.weight) : max, null as number | null);
+    const peakChest = allMeasurements.reduce((max, m) => m.chest_cm != null && (max == null || Number(m.chest_cm) > max) ? Number(m.chest_cm) : max, null as number | null);
+    const minWaist = allMeasurements.reduce((min, m) => m.waist_cm != null && (min == null || Number(m.waist_cm) < min) ? Number(m.waist_cm) : min, null as number | null);
+
     const sleepScores = sleepRes.data?.filter(s => s.score != null).map(s => s.score!) || [];
     const avgSleep = sleepScores.length > 0 ? sleepScores.reduce((a, b) => a + b, 0) / sleepScores.length : null;
 
@@ -469,10 +482,15 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
     const daysInCycle = Math.max(1, Math.ceil((end.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
 
     setCurrentData({
-      weight: latestMeasurement?.weight || null,
-      chest: latestMeasurement?.chest_cm || null,
-      waist: latestMeasurement?.waist_cm || null,
-      hips: latestMeasurement?.hips_cm || null,
+      weight: latestMeasurement?.weight != null ? Number(latestMeasurement.weight) : null,
+      chest: latestMeasurement?.chest_cm != null ? Number(latestMeasurement.chest_cm) : null,
+      waist: latestMeasurement?.waist_cm != null ? Number(latestMeasurement.waist_cm) : null,
+      hips: latestMeasurement?.hips_cm != null ? Number(latestMeasurement.hips_cm) : null,
+      shoulder: latestMeasurement?.shoulder_cm != null ? Number(latestMeasurement.shoulder_cm) : null,
+      peak_weight: peakWeight,
+      peak_chest: peakChest,
+      min_waist: minWaist,
+      measurement_count: allMeasurements.length,
       sleep_avg: avgSleep ? Math.round(avgSleep * 10) / 10 : null,
       training_volume: cycleVolume,
       daily_volume: cycleVolume / daysInCycle,
@@ -572,12 +590,17 @@ function CycleDetail({ cycle: initialCycle, onBack, onEnd, onUpdate, userId }: {
           <>
             {/* Body Changes */}
             <div>
-              <h2 className="text-lg font-semibold mb-3">Lichamelijke Veranderingen</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">Lichamelijke Veranderingen</h2>
+                {currentData?.measurement_count > 0 && (
+                  <span className="text-xs text-muted-foreground">{currentData.measurement_count} meting(en) in cycle</span>
+                )}
+              </div>
               {hasAnyDelta ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <DeltaCard label="Gewicht" value={weightDelta} unit=" kg" icon={Weight} baseline={baseline.weight} current={currentData?.weight} />
-                  <DeltaCard label="Borst" value={chestDelta} unit=" cm" icon={Ruler} baseline={baseline.chest} current={currentData?.chest} />
-                  <DeltaCard label="Taille" value={waistDelta} unit=" cm" icon={Ruler} baseline={baseline.waist} current={currentData?.waist} />
+                  <DeltaCard label="Gewicht" value={weightDelta} unit=" kg" icon={Weight} baseline={baseline.weight} current={currentData?.weight} peak={currentData?.peak_weight} peakLabel="Hoogste" />
+                  <DeltaCard label="Borst" value={chestDelta} unit=" cm" icon={Ruler} baseline={baseline.chest} current={currentData?.chest} peak={currentData?.peak_chest} peakLabel="Hoogste" />
+                  <DeltaCard label="Taille" value={waistDelta} unit=" cm" icon={Ruler} baseline={baseline.waist} current={currentData?.waist} peak={currentData?.min_waist} peakLabel="Laagste" />
                   <DeltaCard label="Heupen" value={hipsDelta} unit=" cm" icon={Ruler} baseline={baseline.hips} current={currentData?.hips} />
                 </div>
               ) : (
