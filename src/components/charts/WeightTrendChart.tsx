@@ -14,7 +14,7 @@ interface WeightData {
   source: 'fitbit' | 'measurement';
 }
 
-type Period = '30' | '60' | '90';
+type Period = '30' | '60' | '90' | '180' | '360';
 
 export default function WeightTrendChart() {
   const { user } = useAuth();
@@ -138,10 +138,12 @@ export default function WeightTrendChart() {
           )}
         </div>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="w-full mt-2">
-          <TabsList className="grid w-full grid-cols-3 h-8">
+          <TabsList className="grid w-full grid-cols-5 h-8">
             <TabsTrigger value="30" className="text-xs">30d</TabsTrigger>
             <TabsTrigger value="60" className="text-xs">60d</TabsTrigger>
             <TabsTrigger value="90" className="text-xs">90d</TabsTrigger>
+            <TabsTrigger value="180" className="text-xs">180d</TabsTrigger>
+            <TabsTrigger value="360" className="text-xs">1j</TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
