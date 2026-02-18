@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, Check, Clock, Instagram, Share2, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, Clock, Instagram, Share2, Pencil, Dumbbell } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 import { nl } from 'date-fns/locale/nl';
 import { toast } from 'sonner';
@@ -46,6 +46,7 @@ interface WorkoutExercise {
     id: string;
     name: string;
     body_part: string | null;
+    image_url: string | null;
   };
   sets: WorkoutSet[];
   lastTime?: {
@@ -128,7 +129,7 @@ export default function WorkoutDetail() {
           exercise_id,
           order_index,
           notes,
-          exercise:exercises(id, name, body_part)
+          exercise:exercises(id, name, body_part, image_url)
         `)
         .eq('workout_id', id)
         .order('order_index', { ascending: true });
@@ -145,7 +146,21 @@ export default function WorkoutDetail() {
 
           const lastTime = await loadLastTime(ex.exercise_id, workoutData.date);
 
-          return { ...ex, exercise: ex.exercise, sets: setsData || [], lastTime };
+          // Generate signed URL for exercise image
+          let imageUrl = ex.exercise?.image_url || null;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            let filePath = imageUrl;
+            if (filePath.includes('exercise-images/')) {
+              filePath = filePath.split('exercise-images/')[1];
+            }
+            const { data: signedData } = await supabase.storage
+              .from('exercise-images')
+              .createSignedUrl(filePath, 3600);
+            imageUrl = signedData?.signedUrl || null;
+          }
+
+          const exercise = { ...ex.exercise, image_url: imageUrl };
+          return { ...ex, exercise, sets: setsData || [], lastTime };
         })
       );
 
@@ -611,13 +626,26 @@ export default function WorkoutDetail() {
           <Card key={exercise.id}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-sm">{exercise.exercise.name}</CardTitle>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {exercise.exercise.image_url ? (
+                    <img
+                      src={exercise.exercise.image_url}
+                      alt={exercise.exercise.name}
+                      className="w-9 h-9 rounded object-cover border border-border shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded bg-muted border border-border flex items-center justify-center shrink-0">
+                      <Dumbbell className="h-4 w-4 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-sm truncate">{exercise.exercise.name}</CardTitle>
                   {exercise.lastTime && (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       Vorige: {exercise.lastTime.sets.map(s => `${s.weight || 0}×${s.reps || 0}`).join(', ')}
                     </p>
                   )}
+                  </div>
                 </div>
                 {canEdit && (
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => deleteExercise(exercise.id)}>
