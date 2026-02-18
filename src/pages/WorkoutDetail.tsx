@@ -78,7 +78,7 @@ export default function WorkoutDetail() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [editing, setEditing] = useState(false);
-
+  const [showRir] = useState(() => localStorage.getItem('showRir') !== 'false');
   useEffect(() => {
     if (user && id) {
       loadWorkout();
@@ -662,7 +662,7 @@ export default function WorkoutDetail() {
                       <th className="text-left p-1.5 text-xs font-medium text-muted-foreground">Set</th>
                       <th className="text-left p-1.5 text-xs font-medium text-muted-foreground">Kg</th>
                       <th className="text-left p-1.5 text-xs font-medium text-muted-foreground">Reps</th>
-                      <th className="text-left p-1.5 text-xs font-medium text-muted-foreground">RIR</th>
+                      {showRir && <th className="text-left p-1.5 text-xs font-medium text-muted-foreground">RIR</th>}
                       <th className="text-center p-1.5 text-xs font-medium text-muted-foreground">✓</th>
                     </tr>
                   </thead>
@@ -693,6 +693,7 @@ export default function WorkoutDetail() {
                             disabled={!canEdit}
                           />
                         </td>
+                        {showRir && (
                         <td className="p-1.5">
                           <Input
                             type="number"
@@ -702,6 +703,7 @@ export default function WorkoutDetail() {
                             disabled={!canEdit}
                           />
                         </td>
+                        )}
                         <td className="p-1.5 text-center">
                           <Checkbox
                             checked={set.completed}
