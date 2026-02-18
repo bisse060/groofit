@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw, Dumbbell } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ export default function Profile() {
   });
   const [connectingFatsecret, setConnectingFatsecret] = useState(false);
   const [syncingFatsecret, setSyncingFatsecret] = useState(false);
+  const [showRir, setShowRir] = useState(() => localStorage.getItem('showRir') !== 'false');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -540,6 +542,30 @@ export default function Profile() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Dumbbell className="h-5 w-5" />
+              Workout Instellingen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>RIR (Reps In Reserve)</Label>
+                <p className="text-xs text-muted-foreground">Toon de RIR-kolom bij het invullen van sets</p>
+              </div>
+              <Switch
+                checked={showRir}
+                onCheckedChange={(checked) => {
+                  setShowRir(checked);
+                  localStorage.setItem('showRir', String(checked));
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
 
