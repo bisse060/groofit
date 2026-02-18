@@ -22,10 +22,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-interface ExerciseThumb {
-  name: string;
-  image_url: string | null;
-}
 
 interface WorkoutWithStats {
   id: string;
@@ -39,7 +35,6 @@ interface WorkoutWithStats {
   total_sets?: number;
   total_volume?: number;
   exercise_count?: number;
-  exercise_thumbs?: ExerciseThumb[];
 }
 
 export default function Workouts() {
@@ -91,9 +86,8 @@ export default function Workouts() {
         (workoutData || []).map(async (w) => {
           const { data: exercises } = await supabase
             .from('workout_exercises')
-            .select('id, exercise:exercises(name, image_url)')
-            .eq('workout_id', w.id)
-            .order('order_index', { ascending: true });
+            .select('id')
+            .eq('workout_id', w.id);
 
           let totalSets = 0;
           let totalVolume = 0;
@@ -112,32 +106,11 @@ export default function Workouts() {
             }
           }
 
-          // Generate signed URLs for exercise thumbnails
-          const exerciseThumbs: ExerciseThumb[] = await Promise.all(
-            (exercises || []).map(async (ex: any) => {
-              const exercise = ex.exercise;
-              if (!exercise) return { name: '?', image_url: null };
-              let imageUrl = exercise.image_url;
-              if (imageUrl && !imageUrl.startsWith('http')) {
-                let filePath = imageUrl;
-                if (filePath.includes('exercise-images/')) {
-                  filePath = filePath.split('exercise-images/')[1];
-                }
-                const { data: signedData } = await supabase.storage
-                  .from('exercise-images')
-                  .createSignedUrl(filePath, 3600);
-                imageUrl = signedData?.signedUrl || null;
-              }
-              return { name: exercise.name, image_url: imageUrl };
-            })
-          );
-
           return {
             ...w,
             total_sets: totalSets,
             total_volume: totalVolume,
             exercise_count: exercises?.length || 0,
-            exercise_thumbs: exerciseThumbs,
           };
         })
       );
@@ -418,28 +391,6 @@ export default function Workouts() {
                             <span>{w.exercise_count} oef</span>
                             <span>{w.total_sets} sets</span>
                           </div>
-                          {w.exercise_thumbs && w.exercise_thumbs.length > 0 && (
-                            <div className="flex items-center gap-1.5 mt-2">
-                              {w.exercise_thumbs.slice(0, 5).map((thumb, i) => (
-                                <div key={i} className="relative group">
-                                  {thumb.image_url ? (
-                                    <img
-                                      src={thumb.image_url}
-                                      alt={thumb.name}
-                                      className="w-8 h-8 rounded object-cover border border-border"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded bg-muted border border-border flex items-center justify-center">
-                                      <Dumbbell className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              {w.exercise_thumbs.length > 5 && (
-                                <span className="text-[10px] text-muted-foreground">+{w.exercise_thumbs.length - 5}</span>
-                              )}
-                            </div>
-                          )}
                         </div>
                         {w.total_volume != null && w.total_volume > 0 && (
                           <div className="text-right">
@@ -503,28 +454,6 @@ export default function Workouts() {
                             <span>{format(new Date(workout.date), 'd MMM yyyy', { locale: nl })}</span>
                             {duration && <span>{duration} min</span>}
                           </div>
-                          {workout.exercise_thumbs && workout.exercise_thumbs.length > 0 && (
-                            <div className="flex items-center gap-1.5 mt-2">
-                              {workout.exercise_thumbs.slice(0, 5).map((thumb, i) => (
-                                <div key={i}>
-                                  {thumb.image_url ? (
-                                    <img
-                                      src={thumb.image_url}
-                                      alt={thumb.name}
-                                      className="w-8 h-8 rounded object-cover border border-border"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded bg-muted border border-border flex items-center justify-center">
-                                      <Dumbbell className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              {workout.exercise_thumbs.length > 5 && (
-                                <span className="text-[10px] text-muted-foreground">+{workout.exercise_thumbs.length - 5}</span>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </CardContent>
