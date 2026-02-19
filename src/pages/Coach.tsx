@@ -372,17 +372,17 @@ export default function Coach() {
     <Layout>
       <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100dvh-7rem)] max-w-3xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
-          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10">
-            <Sparkles className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+            <Sparkles className="h-4 w-4 text-primary" />
           </div>
-          <div className="flex-1">
-            <h1 className="font-semibold text-foreground">AI Coach</h1>
-            <p className="text-xs text-muted-foreground">Persoonlijk fitnessadvies op basis van jouw data</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-sm text-foreground leading-tight">AI Coach</h1>
+            <p className="text-xs text-muted-foreground truncate">Persoonlijk advies op basis van jouw data</p>
           </div>
           <button
             onClick={() => setShowInstructionsDialog(true)}
-            className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors shrink-0"
             title="Persoonlijke instructies"
           >
             <Settings2 className="h-4 w-4 text-muted-foreground" />
@@ -390,7 +390,7 @@ export default function Coach() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
           {isLoadingHistory && (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -398,28 +398,28 @@ export default function Coach() {
           )}
 
           {showQuickActions && (
-            <div className="space-y-4 py-4">
-              <div className="text-center space-y-2">
-                <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mx-auto">
-                  <Sparkles className="h-7 w-7 text-primary" />
+            <div className="space-y-3 py-2">
+              <div className="text-center space-y-1.5">
+                <div className="flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 mx-auto">
+                  <Sparkles className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg font-semibold">Hoi! Ik ben je AI Coach</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  Ik ken jouw trainingen, metingen en slaapdata. Stel me gerust een vraag!
+                <h2 className="text-base font-semibold">Hoi! Ik ben je AI Coach</h2>
+                <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                  Ik ken jouw trainingen, metingen en slaapdata. Stel me een vraag!
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-2 mt-4">
+              <div className="grid grid-cols-1 gap-1.5">
                 {QUICK_ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
                     <button
                       key={action.label}
                       onClick={() => handleQuickAction(action.label)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left group"
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left group"
                     >
-                      <Icon className="h-4 w-4 text-primary shrink-0" />
+                      <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
                       <span className="text-sm text-foreground">{action.label}</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
                     </button>
                   );
                 })}
@@ -430,25 +430,25 @@ export default function Coach() {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}
+              className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}
             >
               {msg.role === 'assistant' && (
                 <div className="flex items-end">
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 shrink-0">
+                    <Bot className="h-3.5 w-3.5 text-primary" />
                   </div>
                 </div>
               )}
               <div
                 className={cn(
-                  'max-w-[80%] rounded-2xl px-4 py-3',
+                  'max-w-[82%] rounded-2xl px-3 py-2.5',
                   msg.role === 'user'
                     ? 'bg-primary text-primary-foreground rounded-br-sm'
                     : 'bg-muted text-foreground rounded-bl-sm'
                 )}
               >
                 {msg.metadata?.proactive && (
-                  <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-border/30">
+                  <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-border/30">
                     <Sparkles className="h-3 w-3 text-primary" />
                     <span className="text-xs font-medium text-primary">Coach tip van deze week</span>
                   </div>
@@ -464,18 +464,18 @@ export default function Coach() {
                 {msg.metadata?.routineId && (
                   <button
                     onClick={() => navigate(`/routines/${msg.metadata!.routineId}`)}
-                    className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors w-full"
+                    className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors w-full"
                   >
-                    <Dumbbell className="h-4 w-4" />
+                    <Dumbbell className="h-3.5 w-3.5" />
                     <span className="text-sm font-medium">Bekijk routine</span>
-                    <ChevronRight className="h-4 w-4 ml-auto" />
+                    <ChevronRight className="h-3.5 w-3.5 ml-auto" />
                   </button>
                 )}
               </div>
               {msg.role === 'user' && (
                 <div className="flex items-end">
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary shrink-0">
-                    <User className="h-4 w-4 text-primary-foreground" />
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary shrink-0">
+                    <User className="h-3.5 w-3.5 text-primary-foreground" />
                   </div>
                 </div>
               )}
@@ -483,17 +483,17 @@ export default function Coach() {
           ))}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start">
+            <div className="flex gap-2 justify-start">
               <div className="flex items-end">
-                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 shrink-0">
-                  <Bot className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 shrink-0">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
                 </div>
               </div>
-              <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="bg-muted rounded-2xl rounded-bl-sm px-3 py-2.5">
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -503,7 +503,7 @@ export default function Coach() {
         </div>
 
         {/* Input */}
-        <div className="px-4 py-3 border-t border-border/50 bg-background">
+        <div className="px-3 py-2.5 border-t border-border/50 bg-background">
           <div className="flex gap-2 items-end">
             <Textarea
               ref={textareaRef}
@@ -511,7 +511,7 @@ export default function Coach() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Stel een vraag aan je coach..."
-              className="min-h-[44px] max-h-32 resize-none rounded-xl text-sm"
+              className="min-h-[40px] max-h-28 resize-none rounded-xl text-sm"
               disabled={isLoading}
               rows={1}
             />
@@ -519,18 +519,16 @@ export default function Coach() {
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-11 w-11 rounded-xl shrink-0"
+              className="h-10 w-10 rounded-xl shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-muted-foreground">
-              Enter = versturen · Shift+Enter = nieuwe regel
-            </p>
+          <div className="flex items-center justify-between mt-1.5">
+            <p className="text-xs text-muted-foreground">Enter = versturen</p>
             <button
               onClick={() => { setRoutineInput(''); setShowRoutineDialog(true); }}
-              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
             >
               <Dumbbell className="h-3 w-3" />
               Schema aanmaken
@@ -538,8 +536,6 @@ export default function Coach() {
           </div>
         </div>
       </div>
-
-      {/* Routine Generator Dialog */}
       {showRoutineDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowRoutineDialog(false)} />
