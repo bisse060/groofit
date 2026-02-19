@@ -706,10 +706,14 @@ export default function WorkoutDetail() {
                         <td className="p-1.5 text-xs text-muted-foreground">{set.set_number}</td>
                         <td className="p-1.5">
                           <Input
-                            type="number"
-                            step="0.5"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*[.,]?[0-9]*"
                             value={set.weight ?? ''}
-                            onChange={(e) => updateSetLocal(set.id, 'weight', e.target.value === '' ? null : parseFloat(e.target.value))}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(',', '.');
+                              updateSetLocal(set.id, 'weight', val === '' ? null : parseFloat(val));
+                            }}
                             className="w-16 h-7 text-sm"
                             placeholder={lastSet?.weight?.toString() ?? ''}
                             disabled={!canEdit}
@@ -717,7 +721,9 @@ export default function WorkoutDetail() {
                         </td>
                         <td className="p-1.5">
                           <Input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={set.reps ?? ''}
                             onChange={(e) => updateSetLocal(set.id, 'reps', e.target.value === '' ? null : parseInt(e.target.value))}
                             className="w-14 h-7 text-sm"
@@ -728,7 +734,9 @@ export default function WorkoutDetail() {
                         {showRir && (
                         <td className="p-1.5">
                           <Input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={set.rir ?? ''}
                             onChange={(e) => updateSetLocal(set.id, 'rir', e.target.value === '' ? null : parseInt(e.target.value))}
                             className="w-14 h-7 text-sm"
