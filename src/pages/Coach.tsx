@@ -199,8 +199,11 @@ export default function Coach() {
       // Save assistant message
       await saveMessage('assistant', assistantContent);
 
-      // If user asked for a routine, automatically open the routine dialog
-      if (isRoutineRequest(text) && assistantContent.length > 0) {
+      // Open routine dialog if user asked for a routine OR if the AI response mentions creating a schema
+      const aiMentionsSchema = assistantContent.toLowerCase().includes('schema aanmaken') ||
+        assistantContent.toLowerCase().includes('knop') ||
+        assistantContent.toLowerCase().includes('trainingschema');
+      if ((isRoutineRequest(text) || aiMentionsSchema) && assistantContent.length > 0) {
         setRoutineInput(text);
         setShowRoutineDialog(true);
       }
@@ -430,9 +433,18 @@ export default function Coach() {
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            Enter = versturen · Shift+Enter = nieuwe regel
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-muted-foreground">
+              Enter = versturen · Shift+Enter = nieuwe regel
+            </p>
+            <button
+              onClick={() => { setRoutineInput(''); setShowRoutineDialog(true); }}
+              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+            >
+              <Dumbbell className="h-3 w-3" />
+              Schema aanmaken
+            </button>
+          </div>
         </div>
       </div>
 
