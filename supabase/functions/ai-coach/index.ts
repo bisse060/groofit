@@ -65,11 +65,18 @@ Deno.serve(async (req) => {
       const sevenDaysStr2 = sevenDaysAgo2.toISOString().split("T")[0];
 
       console.log("[ai-coach] fetching insight data for user", user.id);
-      const [profileRes2, yesterdayLogRes, yesterdaySleepRes, weekLogsRes] = await Promise.all([
+      const [profileRes2, yesterdayLogRes, yesterdaySleepRes, weekLogsRes, recentWorkoutsRes] = await Promise.all([
         supabase.from("profiles").select("full_name, current_weight, target_weight, goals").eq("id", user.id).single(),
         supabase.from("daily_logs").select("steps, calorie_intake, calorie_burn, resting_heart_rate").eq("user_id", user.id).eq("log_date", yesterdayStr).maybeSingle(),
         supabase.from("sleep_logs").select("duration_minutes, efficiency, score").eq("user_id", user.id).eq("date", yesterdayStr).maybeSingle(),
         supabase.from("daily_logs").select("steps, calorie_intake, active_minutes_very").eq("user_id", user.id).gte("log_date", sevenDaysStr2).order("log_date", { ascending: false }),
+        supabase.from("workouts")
+          .select("title, date, notes, workout_exercises(exercise_id, notes, workout_sets(set_number, weight, reps, rir))")
+          .eq("user_id", user.id)
+          .eq("is_template", false)
+          .gte("date", sevenDaysStr2)
+          .order("date", { ascending: false })
+          .limit(5),
       ]);
 
       console.log("[ai-coach] insight data fetched, profile:", !!profileRes2.data, "errors:", profileRes2.error?.message);
@@ -78,18 +85,45 @@ Deno.serve(async (req) => {
       const yesterdayLog = yesterdayLogRes.data;
       const yesterdaySleep = yesterdaySleepRes.data;
       const weekLogs = weekLogsRes.data || [];
+      const recentWorkouts = recentWorkoutsRes.data || [];
 
       const avgSteps = weekLogs.length > 0 ? Math.round(weekLogs.reduce((s, l) => s + (l.steps || 0), 0) / weekLogs.length) : 0;
+
+      // Format recent workouts
+      const workoutContext = recentWorkouts.length === 0
+        ? "Geen trainingen afgelopen week."
+        : recentWorkouts.map(w => {
+            const exercises = Array.isArray(w.workout_exercises) ? w.workout_exercises : [];
+            const exerciseSummary = exercises.map((ex: any) => {
+              const sets = Array.isArray(ex.workout_sets) ? ex.workout_sets : [];
+              const completedSets = sets.filter((s: any) => s.reps > 0);
+              if (completedSets.length === 0) return null;
+              const weights = completedSets.map((s: any) => s.weight).filter(Boolean);
+              const maxWeight = weights.length > 0 ? Math.max(...weights) : 0;
+              return `${completedSets.length} sets${maxWeight > 0 ? ` (max ${maxWeight}kg)` : ""}`;
+            }).filter(Boolean);
+            return `- ${w.date}: ${w.title || "Workout"} — ${exercises.length} oefeningen${exerciseSummary.length > 0 ? ": " + exerciseSummary.slice(0, 3).join(", ") : ""}`;
+          }).join("\n");
 
       const insightSystemPrompt = `Je bent een persoonlijke AI-coach. Antwoord altijd in het Nederlands.
 
 Gebruiker: ${p?.full_name || "Onbekend"}, gewicht ${p?.current_weight || "?"} kg, doel: ${p?.target_weight || "?"} kg.
 Doelen: ${p?.goals || "niet ingevuld"}.
-Gemiddeld aantal stappen afgelopen week: ${avgSteps}.`;
+Gemiddeld stappen afgelopen week: ${avgSteps}.
 
-      const yesterdayContext = `Gisteren (${yesterdayStr}): ${yesterdayLog?.steps ? yesterdayLog.steps + " stappen" : "geen stappen"}, ${yesterdayLog?.calorie_intake ? yesterdayLog.calorie_intake + " kcal intake" : "geen calorie-data"}, ${yesterdaySleep ? Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10 + "u slaap (score " + (yesterdaySleep.score || "?") + ")" : "geen slaapdata"}.`;
+Trainingen afgelopen week:
+${workoutContext}`;
 
-      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard. Wees direct, stimulerend en concreet. Geen opener als "Hoi". Begin gewoon met de observatie.
+      const yesterdayContext = [
+        `Gisteren (${yesterdayStr}):`,
+        yesterdayLog?.steps ? `${yesterdayLog.steps} stappen` : "geen stappen",
+        yesterdayLog?.calorie_intake ? `${yesterdayLog.calorie_intake} kcal intake` : null,
+        yesterdayLog?.calorie_burn ? `${yesterdayLog.calorie_burn} kcal verbrand` : null,
+        yesterdayLog?.resting_heart_rate ? `rustpols ${yesterdayLog.resting_heart_rate} bpm` : null,
+        yesterdaySleep ? `${Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10}u slaap (score ${yesterdaySleep.score || "?"}, efficiëntie ${yesterdaySleep.efficiency || "?"}%)` : "geen slaapdata",
+      ].filter(Boolean).join(", ");
+
+      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard. Wees direct, stimulerend en concreet. Baseer je op alle beschikbare data. Geen opener als "Hoi". Begin direct met de observatie.
 
 ${yesterdayContext}`;
 
