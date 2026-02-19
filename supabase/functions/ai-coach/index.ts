@@ -52,7 +52,7 @@ serve(async (req) => {
     const sevenDaysStr = sevenDaysAgo.toISOString().split("T")[0];
 
     const [profileRes, workoutsRes, measurementsRes, sleepRes, logsRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, current_weight, target_weight, height_cm, goals").eq("id", user.id).single(),
+      supabase.from("profiles").select("full_name, current_weight, target_weight, height_cm, goals, coach_instructions").eq("id", user.id).single(),
       supabase.from("workouts").select("title, date, notes, workout_exercises(exercise_id, notes, workout_sets(set_number, weight, reps, rir))").eq("user_id", user.id).eq("is_template", false).gte("date", sevenDaysStr).order("date", { ascending: false }),
       supabase.from("measurements").select("measurement_date, weight, chest_cm, waist_cm, hips_cm, bicep_left_cm, bicep_right_cm").eq("user_id", user.id).order("measurement_date", { ascending: false }).limit(3),
       supabase.from("sleep_logs").select("date, duration_minutes, efficiency, score, deep_minutes, rem_minutes, light_minutes, wake_minutes").eq("user_id", user.id).gte("date", sevenDaysStr).order("date", { ascending: false }),
@@ -75,6 +75,7 @@ Gewicht: ${profile?.current_weight ? profile.current_weight + " kg" : "Niet inge
 Streefgewicht: ${profile?.target_weight ? profile.target_weight + " kg" : "Niet ingevuld"}
 Lengte: ${profile?.height_cm ? profile.height_cm + " cm" : "Niet ingevuld"}
 Doelen: ${profile?.goals || "Niet ingevuld"}
+${profile?.coach_instructions ? `\n## Persoonlijke instructies van de gebruiker (ALTIJD opvolgen)\n${profile.coach_instructions}` : ""}
 
 ## Trainingen afgelopen 7 dagen (${workouts.length} workouts)
 ${workouts.length === 0 ? "Geen trainingen geregistreerd." : workouts.map(w => `- ${w.date}: ${w.title || "Workout"} (${Array.isArray(w.workout_exercises) ? w.workout_exercises.length : 0} oefeningen)`).join("\n")}

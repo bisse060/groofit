@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Sparkles, Dumbbell, Moon, TrendingUp, ChevronRight, Bot, User, Loader2, X } from 'lucide-react';
+import { Send, Sparkles, Dumbbell, Moon, TrendingUp, ChevronRight, Bot, User, Loader2, X, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -48,6 +48,9 @@ export default function Coach() {
   const [showRoutineDialog, setShowRoutineDialog] = useState(false);
   const [routineInput, setRoutineInput] = useState('');
   const [isGeneratingRoutine, setIsGeneratingRoutine] = useState(false);
+  const [showInstructionsDialog, setShowInstructionsDialog] = useState(false);
+  const [coachInstructions, setCoachInstructions] = useState('');
+  const [isSavingInstructions, setIsSavingInstructions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -55,6 +58,7 @@ export default function Coach() {
 
   useEffect(() => {
     loadHistory();
+    loadInstructions();
   }, []);
 
   useEffect(() => {
@@ -88,6 +92,35 @@ export default function Coach() {
       console.error('Error loading history:', err);
     } finally {
       setIsLoadingHistory(false);
+    }
+  };
+
+  const loadInstructions = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('coach_instructions')
+        .single();
+      if (data?.coach_instructions) setCoachInstructions(data.coach_instructions);
+    } catch (err) {
+      console.error('Error loading instructions:', err);
+    }
+  };
+
+  const saveInstructions = async () => {
+    setIsSavingInstructions(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ coach_instructions: coachInstructions })
+        .eq('id', user?.id);
+      if (error) throw error;
+      setShowInstructionsDialog(false);
+      toast({ title: 'Instructies opgeslagen', description: 'De coach houdt hier voortaan rekening mee.' });
+    } catch (err: any) {
+      toast({ title: 'Fout', description: err.message || 'Opslaan mislukt', variant: 'destructive' });
+    } finally {
+      setIsSavingInstructions(false);
     }
   };
 
@@ -343,10 +376,17 @@ export default function Coach() {
           <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10">
             <Sparkles className="h-5 w-5 text-primary" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-semibold text-foreground">AI Coach</h1>
             <p className="text-xs text-muted-foreground">Persoonlijk fitnessadvies op basis van jouw data</p>
           </div>
+          <button
+            onClick={() => setShowInstructionsDialog(true)}
+            className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors"
+            title="Persoonlijke instructies"
+          >
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
 
         {/* Messages */}
@@ -542,6 +582,53 @@ export default function Coach() {
                     <Sparkles className="h-4 w-4 mr-2" />
                     Schema maken
                   </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instructies Dialog */}
+      {showInstructionsDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowInstructionsDialog(false)} />
+          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <button
+              onClick={() => setShowInstructionsDialog(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <Settings2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Persoonlijke instructies</h2>
+                <p className="text-sm text-muted-foreground">De coach houdt hier altijd rekening mee</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Bijv: "Ik train 4x per week en heb een knieblessure. Geef altijd concrete sets en reps. Hou antwoorden kort."
+            </p>
+            <Textarea
+              value={coachInstructions}
+              onChange={(e) => setCoachInstructions(e.target.value)}
+              placeholder="Geef hier je voorkeuren en context mee aan de coach..."
+              className="mb-4 resize-none"
+              rows={6}
+              disabled={isSavingInstructions}
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowInstructionsDialog(false)} className="flex-1" disabled={isSavingInstructions}>
+                Annuleren
+              </Button>
+              <Button onClick={saveInstructions} className="flex-1" disabled={isSavingInstructions}>
+                {isSavingInstructions ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Opslaan...</>
+                ) : (
+                  'Opslaan'
                 )}
               </Button>
             </div>

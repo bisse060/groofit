@@ -536,6 +536,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          coach_instructions: string | null
           created_at: string | null
           current_weight: number | null
           full_name: string
@@ -548,6 +549,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          coach_instructions?: string | null
           created_at?: string | null
           current_weight?: number | null
           full_name: string
@@ -560,6 +562,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          coach_instructions?: string | null
           created_at?: string | null
           current_weight?: number | null
           full_name?: string
