@@ -199,13 +199,17 @@ export default function Coach() {
       // Save assistant message
       await saveMessage('assistant', assistantContent);
 
-      // Open routine dialog if user asked for a routine OR if the AI response mentions creating a schema
+      // If user asked for a routine, directly generate it using the full conversation as context
       const aiMentionsSchema = assistantContent.toLowerCase().includes('schema aanmaken') ||
         assistantContent.toLowerCase().includes('knop') ||
         assistantContent.toLowerCase().includes('trainingschema');
       if ((isRoutineRequest(text) || aiMentionsSchema) && assistantContent.length > 0) {
-        setRoutineInput(text);
-        setShowRoutineDialog(true);
+        // Build full context from conversation for better routine generation
+        const conversationContext = [...messages, userMsg, { id: assistantId, role: 'assistant' as const, content: assistantContent }]
+          .slice(-10)
+          .map(m => `${m.role === 'user' ? 'Gebruiker' : 'Coach'}: ${m.content}`)
+          .join('\n');
+        await generateRoutineFromContext(conversationContext);
       }
     } catch (err) {
       console.error('Chat error:', err);
@@ -213,6 +217,53 @@ export default function Coach() {
       setMessages((prev) => prev.filter((m) => m.id !== assistantId));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Direct generation from chat context — no dialog needed
+  const generateRoutineFromContext = async (conversationContext: string) => {
+    setIsGeneratingRoutine(true);
+
+    // Show a "bezig met aanmaken" message in chat
+    const thinkingId = crypto.randomUUID();
+    setMessages((prev) => [...prev, {
+      id: thinkingId,
+      role: 'assistant',
+      content: '⏳ Ik maak je trainingschema aan op basis van ons gesprek...',
+    }]);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'generate-routine', routineName: conversationContext }),
+      });
+
+      const result = await resp.json();
+      if (!resp.ok || !result.success) throw new Error(result.error || 'Fout bij aanmaken schema');
+
+      // Replace thinking message with success message
+      const successMsg: Message = {
+        id: thinkingId,
+        role: 'assistant',
+        content: `✅ ${result.message || `Je trainingschema "${result.routineTitle}" is aangemaakt met ${result.exerciseCount} oefeningen.`} Je kunt het nu bekijken en aanpassen.`,
+        metadata: { routineId: result.routineId, routineTitle: result.routineTitle },
+      };
+      setMessages((prev) => prev.map((m) => m.id === thinkingId ? successMsg : m));
+      await saveMessage('assistant', successMsg.content, { routineId: result.routineId, routineTitle: result.routineTitle });
+
+      toast({
+        title: '🎉 Schema aangemaakt!',
+        description: `"${result.routineTitle}" staat klaar in je Routines.`,
+      });
+    } catch (err: any) {
+      setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+      toast({ title: 'Fout', description: err.message || 'Schema aanmaken mislukt', variant: 'destructive' });
+    } finally {
+      setIsGeneratingRoutine(false);
     }
   };
 
