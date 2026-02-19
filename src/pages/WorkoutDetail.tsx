@@ -178,16 +178,18 @@ export default function WorkoutDetail() {
       const { data, error } = await supabase
         .from('workout_exercises')
         .select(`
-          workout:workouts!inner(date),
+          workout:workouts!inner(date, is_template),
           sets:workout_sets(set_number, weight, reps)
         `)
         .eq('exercise_id', exerciseId)
-        .lt('workout.date', currentDate)
-        .order('workout.date', { ascending: false })
+        .eq('workout.is_template', false)
+        .neq('workout.id', id)
+        .order('workout(date)', { ascending: false })
         .limit(1);
 
       if (error || !data || data.length === 0) return undefined;
-      return { date: data[0].workout.date, sets: data[0].sets };
+      const sortedSets = [...data[0].sets].sort((a: any, b: any) => a.set_number - b.set_number);
+      return { date: (data[0].workout as any).date, sets: sortedSets };
     } catch (error) {
       return undefined;
     }
