@@ -101,7 +101,7 @@ ${yesterdayContext}`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: insightSystemPrompt },
             { role: "user", content: insightPrompt },
@@ -199,7 +199,9 @@ Gebruik deze data om gepersonaliseerde antwoorden te geven. Als data ontbreekt, 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3-flash-preview",
+          messages,
+          stream: true,
         }),
       });
 
@@ -256,7 +258,7 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemContext + exerciseContext },
             { role: "user", content: routinePrompt },
