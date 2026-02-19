@@ -251,7 +251,7 @@ export default function Performance() {
           </TabsContent>
 
           <TabsContent value="insights" className="mt-4">
-            <Card><CardContent className="p-8 text-center text-muted-foreground">Insights worden beschikbaar na je eerste afgesloten cycle.</CardContent></Card>
+            <InsightsTab cycles={cycles} userId={user!.id} />
           </TabsContent>
         </Tabs>
       </div>
@@ -304,6 +304,172 @@ function CycleForm({ values, onChange, onSubmit, saving, submitLabel, showEndDat
       <Button onClick={onSubmit} disabled={saving} className="w-full">
         {saving ? 'Bezig...' : submitLabel}
       </Button>
+    </div>
+  );
+}
+
+function InsightsTab({ cycles, userId }: { cycles: Cycle[]; userId: string }) {
+  const [insightData, setInsightData] = useState<Record<string, any>>({});
+  const [loadingInsights, setLoadingInsights] = useState(true);
+
+  useEffect(() => {
+    if (cycles.length === 0) {
+      setLoadingInsights(false);
+      return;
+    }
+    loadAllInsights();
+  }, [cycles]);
+
+  const loadAllInsights = async () => {
+    const results: Record<string, any> = {};
+
+    for (const cycle of cycles) {
+      const endDate = cycle.end_date || new Date().toISOString().split('T')[0];
+      const baseline = cycle.baseline_snapshot as any || {};
+
+      const [baselineMeasurementRes, allMeasurementsRes, sleepRes, workoutsRes] = await Promise.all([
+        supabase.from('measurements').select('*').eq('user_id', userId).lte('measurement_date', cycle.start_date).order('measurement_date', { ascending: false }).limit(1),
+        supabase.from('measurements').select('*').eq('user_id', userId).gt('measurement_date', cycle.start_date).lte('measurement_date', endDate).order('measurement_date', { ascending: false }),
+        supabase.from('sleep_logs').select('score').eq('user_id', userId).gte('date', cycle.start_date).lte('date', endDate),
+        supabase.from('workouts').select('id').eq('user_id', userId).eq('is_template', false).gte('date', cycle.start_date).lte('date', endDate),
+      ]);
+
+      const baselineMeasurement = baselineMeasurementRes.data?.[0];
+      const resolvedBaseline = baselineMeasurement ? {
+        weight: baselineMeasurement.weight != null ? Number(baselineMeasurement.weight) : baseline.weight ?? null,
+        waist: baselineMeasurement.waist_cm != null ? Number(baselineMeasurement.waist_cm) : baseline.waist ?? null,
+        chest: baselineMeasurement.chest_cm != null ? Number(baselineMeasurement.chest_cm) : baseline.chest ?? null,
+        sleep_avg_30d: baseline.sleep_avg_30d ?? null,
+        training_volume_30d: baseline.training_volume_30d ?? null,
+      } : baseline;
+
+      const allMeasurements = allMeasurementsRes.data || [];
+      const latestMeasurement = allMeasurements[0] || null;
+
+      const sleepScores = sleepRes.data?.filter(s => s.score != null).map(s => s.score!) || [];
+      const avgSleep = sleepScores.length > 0 ? sleepScores.reduce((a, b) => a + b, 0) / sleepScores.length : null;
+
+      let cycleVolume = 0;
+      if (workoutsRes.data && workoutsRes.data.length > 0) {
+        const workoutIds = workoutsRes.data.map(w => w.id);
+        const { data: exercises } = await supabase.from('workout_exercises').select('id').in('workout_id', workoutIds);
+        if (exercises && exercises.length > 0) {
+          const { data: sets } = await supabase.from('workout_sets').select('weight, reps').in('workout_exercise_id', exercises.map(e => e.id)).eq('completed', true);
+          cycleVolume = (sets || []).reduce((sum, s) => sum + ((s.weight || 0) * (s.reps || 0)), 0);
+        }
+      }
+
+      const startDate = new Date(cycle.start_date);
+      const end = new Date(endDate);
+      const daysInCycle = Math.max(1, Math.ceil((end.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+      const currentWeight = latestMeasurement?.weight != null ? Number(latestMeasurement.weight) : null;
+      const currentWaist = latestMeasurement?.waist_cm != null ? Number(latestMeasurement.waist_cm) : null;
+      const currentChest = latestMeasurement?.chest_cm != null ? Number(latestMeasurement.chest_cm) : null;
+      const dailyVolume = cycleVolume / daysInCycle;
+      const baselineDaily = resolvedBaseline.training_volume_30d ? resolvedBaseline.training_volume_30d / 30 : null;
+
+      results[cycle.id] = {
+        baseline: resolvedBaseline,
+        current: { weight: currentWeight, waist: currentWaist, chest: currentChest, sleep_avg: avgSleep ? Math.round(avgSleep * 10) / 10 : null },
+        weightDelta: currentWeight != null && resolvedBaseline.weight != null ? currentWeight - resolvedBaseline.weight : null,
+        waistDelta: currentWaist != null && resolvedBaseline.waist != null ? currentWaist - resolvedBaseline.waist : null,
+        chestDelta: currentChest != null && resolvedBaseline.chest != null ? currentChest - resolvedBaseline.chest : null,
+        sleepDelta: avgSleep != null && resolvedBaseline.sleep_avg_30d != null ? avgSleep - resolvedBaseline.sleep_avg_30d : null,
+        volumeChange: baselineDaily && dailyVolume ? ((dailyVolume - baselineDaily) / baselineDaily) * 100 : null,
+        daysInCycle,
+        measurementCount: allMeasurements.length,
+        workoutCount: workoutsRes.data?.length || 0,
+      };
+    }
+
+    setInsightData(results);
+    setLoadingInsights(false);
+  };
+
+  if (loadingInsights) {
+    return <div className="text-center py-8 text-muted-foreground">Insights laden...</div>;
+  }
+
+  if (cycles.length === 0) {
+    return <Card><CardContent className="p-8 text-center text-muted-foreground">Nog geen cycles. Start je eerste cycle om insights te zien.</CardContent></Card>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {cycles.map(cycle => {
+        const data = insightData[cycle.id];
+        const isActive = !cycle.end_date;
+        if (!data) return null;
+
+        const hasData = data.weightDelta != null || data.waistDelta != null || data.chestDelta != null;
+
+        return (
+          <Card key={cycle.id}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <CardTitle className="text-base">{cycle.name || 'Naamloze cycle'}</CardTitle>
+                <Badge variant={isActive ? 'default' : 'secondary'} className="capitalize text-xs">{cycle.cycle_type}</Badge>
+                {isActive && <Badge variant="outline" className="border-primary text-primary text-xs">Actief</Badge>}
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {format(new Date(cycle.start_date), 'dd/MM/yy')}
+                  {cycle.end_date ? ` – ${format(new Date(cycle.end_date), 'dd/MM/yy')}` : ' – heden'}
+                  {' '}({data.daysInCycle}d)
+                </span>
+              </div>
+              {cycle.goal && <p className="text-xs text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3" />{cycle.goal}</p>}
+            </CardHeader>
+            <CardContent>
+              {!hasData ? (
+                <p className="text-sm text-muted-foreground">Geen meetdata beschikbaar voor deze cycle. Voeg metingen toe om veranderingen te zien.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                  {data.weightDelta != null && (
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${data.weightDelta > 0 ? 'text-primary' : data.weightDelta < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {data.weightDelta > 0 ? '+' : ''}{Math.round(data.weightDelta * 10) / 10} kg
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Gewicht</div>
+                      <div className="text-[10px] text-muted-foreground">{data.baseline.weight} → {data.current.weight} kg</div>
+                    </div>
+                  )}
+                  {data.waistDelta != null && (
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${data.waistDelta < 0 ? 'text-primary' : data.waistDelta > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {data.waistDelta > 0 ? '+' : ''}{Math.round(data.waistDelta * 10) / 10} cm
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Taille</div>
+                      <div className="text-[10px] text-muted-foreground">{data.baseline.waist} → {data.current.waist} cm</div>
+                    </div>
+                  )}
+                  {data.chestDelta != null && (
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${data.chestDelta > 0 ? 'text-primary' : data.chestDelta < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {data.chestDelta > 0 ? '+' : ''}{Math.round(data.chestDelta * 10) / 10} cm
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Borst</div>
+                      <div className="text-[10px] text-muted-foreground">{data.baseline.chest} → {data.current.chest} cm</div>
+                    </div>
+                  )}
+                  {data.volumeChange != null && (
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${data.volumeChange >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                        {data.volumeChange >= 0 ? '+' : ''}{Math.round(data.volumeChange)}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Trainingsvolume</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-4 text-[10px] text-muted-foreground border-t pt-2 mt-1">
+                <span>{data.measurementCount} meting(en)</span>
+                <span>{data.workoutCount} workout(s)</span>
+                {data.current.sleep_avg != null && <span>Slaapscore: {data.current.sleep_avg}{data.sleepDelta != null ? ` (${data.sleepDelta > 0 ? '+' : ''}${Math.round(data.sleepDelta * 10) / 10})` : ''}</span>}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
