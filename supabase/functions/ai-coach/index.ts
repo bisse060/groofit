@@ -106,7 +106,7 @@ ${yesterdayContext}`;
             { role: "system", content: insightSystemPrompt },
             { role: "user", content: insightPrompt },
           ],
-          max_tokens: 120,
+          max_completion_tokens: 120,
         }),
       });
 
