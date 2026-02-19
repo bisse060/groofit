@@ -101,6 +101,13 @@ export default function Coach() {
     return data?.id;
   };
 
+  // Detect if user message is asking for a routine
+  const isRoutineRequest = (text: string) => {
+    const keywords = ['schema', 'routine', 'trainingschema', 'trainingsplan', 'workout plan', 'programma', 'push pull', 'full body', 'upper lower', 'ppl'];
+    const lower = text.toLowerCase();
+    return keywords.some(k => lower.includes(k));
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
@@ -264,12 +271,6 @@ export default function Coach() {
     }
   };
 
-  // Detect if user message is asking for a routine
-  const isRoutineRequest = (text: string) => {
-    const keywords = ['schema', 'routine', 'trainingschema', 'trainingsplan', 'workout plan', 'programma', 'push pull', 'full body', 'upper lower', 'ppl'];
-    const lower = text.toLowerCase();
-    return keywords.some(k => lower.includes(k));
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
