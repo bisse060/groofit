@@ -28,6 +28,7 @@ export default function CoachInsightCard() {
   const [insight, setInsight] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const cached = getCache();
@@ -40,13 +41,20 @@ export default function CoachInsightCard() {
   }, []);
 
   const fetchInsight = async (force = false) => {
-    if (force) setRefreshing(true);
-    else setLoading(true);
+    if (force) {
+      setRefreshing(true);
+      setError(false);
+    } else {
+      setLoading(true);
+    }
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) return;
+      if (!token) {
+        setError(true);
+        return;
+      }
 
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-coach`, {
         method: 'POST',
@@ -54,14 +62,22 @@ export default function CoachInsightCard() {
         body: JSON.stringify({ action: 'dashboard-insight' }),
       });
 
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        console.error('Coach insight HTTP error:', resp.status);
+        setError(true);
+        return;
+      }
       const result = await resp.json();
       if (result.insight) {
         setInsight(result.insight);
+        setError(false);
         setCache(result.insight);
+      } else {
+        setError(true);
       }
     } catch (err) {
       console.error('Coach insight error:', err);
+      setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -76,6 +92,25 @@ export default function CoachInsightCard() {
           <div className="h-3 bg-muted rounded w-3/4" />
           <div className="h-3 bg-muted rounded w-1/2" />
         </div>
+      </div>
+    );
+  }
+
+  if (error && !insight) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 flex items-center gap-3">
+        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-muted shrink-0">
+          <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        <p className="flex-1 text-sm text-muted-foreground">AI Coach kon geen inzicht laden.</p>
+        <button
+          onClick={() => fetchInsight(true)}
+          disabled={refreshing}
+          className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+          title="Opnieuw proberen"
+        >
+          <RefreshCw className={cn('h-3 w-3', refreshing && 'animate-spin')} />
+        </button>
       </div>
     );
   }
