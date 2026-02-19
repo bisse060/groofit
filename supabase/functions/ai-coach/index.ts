@@ -67,6 +67,8 @@ serve(async (req) => {
 
     const systemContext = `Je bent een persoonlijke AI-coach in de Grofit fitness app. Je bent vriendelijk, motiverend en to-the-point. Je geeft praktisch advies gebaseerd op de data van de gebruiker. Antwoord altijd in het Nederlands.
 
+BELANGRIJK: Als de gebruiker vraagt om een trainingschema, een routine, een trainingsplan of iets vergelijkbaars, beschrijf dan kort wat voor schema je zou aanbevelen (push/pull/legs, full body, etc.) maar zeg ALTIJD aan het einde: "Klik op de knop 'Schema aanmaken' die nu is verschenen om het schema daadwerkelijk op te slaan in de app." Maak nooit een schema alleen via tekst - de app heeft een speciale functie hiervoor die automatisch opent.
+
 ## Gebruikersprofiel
 Naam: ${profile?.full_name || "Onbekend"}
 Gewicht: ${profile?.current_weight ? profile.current_weight + " kg" : "Niet ingevuld"}

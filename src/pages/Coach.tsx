@@ -191,6 +191,12 @@ export default function Coach() {
 
       // Save assistant message
       await saveMessage('assistant', assistantContent);
+
+      // If user asked for a routine, automatically open the routine dialog
+      if (isRoutineRequest(text) && assistantContent.length > 0) {
+        setRoutineInput(text);
+        setShowRoutineDialog(true);
+      }
     } catch (err) {
       console.error('Chat error:', err);
       toast({ title: 'Fout', description: 'Er is een fout opgetreden. Probeer het opnieuw.', variant: 'destructive' });
@@ -239,7 +245,10 @@ export default function Coach() {
       setMessages((prev) => [...prev, assistantMsg]);
       await saveMessage('assistant', assistantMsg.content, { routineId: result.routineId, routineTitle: result.routineTitle });
 
-      toast({ title: 'Schema aangemaakt!', description: result.routineTitle });
+      toast({
+        title: '🎉 Schema aangemaakt!',
+        description: `"${result.routineTitle}" staat klaar in je Routines. Klik op "Bekijk routine" in het chatbericht om het te openen.`,
+      });
     } catch (err: any) {
       toast({ title: 'Fout', description: err.message || 'Schema aanmaken mislukt', variant: 'destructive' });
     } finally {
@@ -253,6 +262,13 @@ export default function Coach() {
     } else {
       sendMessage(label);
     }
+  };
+
+  // Detect if user message is asking for a routine
+  const isRoutineRequest = (text: string) => {
+    const keywords = ['schema', 'routine', 'trainingschema', 'trainingsplan', 'workout plan', 'programma', 'push pull', 'full body', 'upper lower', 'ppl'];
+    const lower = text.toLowerCase();
+    return keywords.some(k => lower.includes(k));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
