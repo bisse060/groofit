@@ -234,7 +234,7 @@ export default function ExercisePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Oefening Toevoegen</DialogTitle>
         </DialogHeader>

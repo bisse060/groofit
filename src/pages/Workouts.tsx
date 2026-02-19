@@ -210,31 +210,43 @@ export default function Workouts() {
 
         if (exError) throw exError;
 
-        // For each template exercise, copy sets from last workout with this exercise
+        // For each template exercise, copy sets from last real workout with this exercise
         if (newExercises) {
           for (const newEx of newExercises) {
-            const { data: lastSets } = await supabase
+            // Find the most recent non-template workout that used this exercise
+            const { data: lastWorkoutExercises } = await supabase
               .from('workout_exercises')
               .select(`
+                workout:workouts!inner(id, date, is_template),
                 sets:workout_sets(set_number, weight, reps, rir, is_warmup)
               `)
               .eq('exercise_id', newEx.exercise_id)
-              .neq('workout_id', templateId)
-              .order('created_at', { ascending: false })
+              .eq('workout.is_template', false)
+              .neq('workout.id', newWorkout.id)
+              .order('workout(date)', { ascending: false })
               .limit(1);
 
-            if (lastSets && lastSets.length > 0 && lastSets[0].sets.length > 0) {
-              const setInserts = lastSets[0].sets.map((s: any) => ({
+            if (lastWorkoutExercises && lastWorkoutExercises.length > 0 && lastWorkoutExercises[0].sets.length > 0) {
+              const sortedSets = [...lastWorkoutExercises[0].sets].sort((a: any, b: any) => a.set_number - b.set_number);
+              const setInserts = sortedSets.map((s: any) => ({
                 workout_exercise_id: newEx.id,
                 set_number: s.set_number,
-                weight: s.weight,
-                reps: s.reps,
-                rir: s.rir,
+                weight: null,
+                reps: null,
+                rir: null,
                 is_warmup: s.is_warmup,
                 completed: false,
               }));
 
               await supabase.from('workout_sets').insert(setInserts);
+            } else {
+              // No previous session: create 3 empty sets as default
+              const defaultSets = [1, 2, 3].map(n => ({
+                workout_exercise_id: newEx.id,
+                set_number: n,
+                completed: false,
+              }));
+              await supabase.from('workout_sets').insert(defaultSets);
             }
           }
         }
