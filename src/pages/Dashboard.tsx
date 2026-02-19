@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Footprints, Dumbbell, Scale, Target, Plus, Moon, Camera } from 'lucide-react';
+import { Footprints, Dumbbell, Scale, Target, Plus, Moon, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, subDays, addDays, isToday } from 'date-fns';
+import { nl } from 'date-fns/locale/nl';
 import Layout from '@/components/Layout';
 import WeightTrendChart from '@/components/charts/WeightTrendChart';
 import CrossDayHighlights from '@/components/dashboard/CrossDayHighlights';
@@ -18,6 +20,7 @@ export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [stats, setStats] = useState({
     todaySteps: 0,
     weekWorkouts: 0,
@@ -25,6 +28,13 @@ export default function Dashboard() {
     targetWeight: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  const formatDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,7 +44,7 @@ export default function Dashboard() {
     if (user) {
       loadDashboardData();
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, selectedDate]);
 
   const loadDashboardData = async () => {
     try {
@@ -44,22 +54,23 @@ export default function Dashboard() {
         .eq('id', user?.id)
         .single();
 
-      const today = new Date().toISOString().split('T')[0];
+      const dateStr = formatDateString(selectedDate);
       const { data: todayLog } = await supabase
         .from('daily_logs')
         .select('steps')
         .eq('user_id', user?.id)
-        .eq('log_date', today)
+        .eq('log_date', dateStr)
         .maybeSingle();
 
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekStart = new Date(selectedDate);
+      weekStart.setDate(weekStart.getDate() - 7);
       const { data: weekLogs } = await supabase
         .from('daily_logs')
         .select('workout_completed')
         .eq('user_id', user?.id)
         .eq('workout_completed', true)
-        .gte('log_date', weekAgo.toISOString().split('T')[0]);
+        .gte('log_date', formatDateString(weekStart))
+        .lte('log_date', dateStr);
 
       // Get current weight: prioritize Fitbit, then measurements, then profile
       let currentWeight = profile?.current_weight || 0;
@@ -126,14 +137,38 @@ export default function Dashboard() {
     <Layout>
       <div className="max-w-5xl mx-auto space-y-4">
         {/* Page Header */}
-        <div>
-          <h1 className="text-xl font-semibold">{t('nav.dashboard')}</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Je fitness overzicht van vandaag</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold">{t('nav.dashboard')}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Je fitness overzicht</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedDate(d => subDays(d, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={isToday(selectedDate) ? "secondary" : "outline"}
+              size="sm"
+              className="text-xs h-8 min-w-[100px]"
+              onClick={() => setSelectedDate(new Date())}
+            >
+              {isToday(selectedDate) ? 'Vandaag' : format(selectedDate, 'd MMM yyyy', { locale: nl })}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSelectedDate(d => addDays(d, 1))}
+              disabled={isToday(selectedDate)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Today Overview - Primary Stats */}
         <section className="space-y-2">
-          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vandaag</h2>
+          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{isToday(selectedDate) ? 'Vandaag' : format(selectedDate, 'd MMMM', { locale: nl })}</h2>
           <div className="grid grid-cols-2 gap-2">
             {/* Steps */}
             <Card className="card-interactive">
