@@ -101,12 +101,11 @@ ${yesterdayContext}`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: insightSystemPrompt },
             { role: "user", content: insightPrompt },
           ],
-          max_completion_tokens: 120,
         }),
       });
 
@@ -200,9 +199,7 @@ Gebruik deze data om gepersonaliseerde antwoorden te geven. Als data ontbreekt, 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-mini",
-          messages,
-          stream: true,
+          model: "google/gemini-2.5-flash",
         }),
       });
 
@@ -259,7 +256,7 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemContext + exerciseContext },
             { role: "user", content: routinePrompt },
@@ -427,7 +424,7 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemContext },
             { role: "user", content: weeklyPrompt },
