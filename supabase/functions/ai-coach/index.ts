@@ -371,6 +371,69 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
       });
     }
 
+    // =====================
+    // ACTION: dashboard-insight (kort persoonlijk inzicht voor dashboard)
+    // =====================
+    if (action === "dashboard-insight") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+      // Haal gisteren data op
+      const { data: yesterdayLog } = await supabase
+        .from("daily_logs")
+        .select("steps, calorie_intake, calorie_burn, resting_heart_rate, active_minutes_very")
+        .eq("user_id", user.id)
+        .eq("log_date", yesterdayStr)
+        .maybeSingle();
+
+      const { data: yesterdaySleep } = await supabase
+        .from("sleep_logs")
+        .select("duration_minutes, efficiency, score")
+        .eq("user_id", user.id)
+        .eq("date", yesterdayStr)
+        .maybeSingle();
+
+      const yesterdayContext = yesterdayLog || yesterdaySleep
+        ? `Gisteren (${yesterdayStr}): ${yesterdayLog?.steps ? yesterdayLog.steps + " stappen" : "geen stappen"}, ${yesterdayLog?.calorie_intake ? yesterdayLog.calorie_intake + " kcal intake" : ""}, ${yesterdaySleep ? Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10 + "u slaap (score " + (yesterdaySleep.score || "?") + ")" : "geen slaapdata"}.`
+        : "Geen data van gisteren beschikbaar.";
+
+      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard van de gebruiker. Combineer gisteren met de trend van de afgelopen week. Wees direct, stimulerend en concreet. Benoem iets specifeks als dat opvalt (goed of slecht). Geen opener als "Hoi" of "Geweldig". Geen vragen. Begin gewoon met de observatie.
+
+Gisteren: ${yesterdayContext}`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-5-mini",
+          messages: [
+            { role: "system", content: systemContext },
+            { role: "user", content: insightPrompt },
+          ],
+          max_tokens: 120,
+        }),
+      });
+
+      if (!response.ok) {
+        return new Response(JSON.stringify({ error: "Fout bij genereren inzicht" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await response.json();
+      const insightText = result.choices?.[0]?.message?.content?.trim();
+
+      return new Response(
+        JSON.stringify({ insight: insightText || null }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(JSON.stringify({ error: "Onbekende actie" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

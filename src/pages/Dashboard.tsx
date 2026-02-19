@@ -15,6 +15,7 @@ import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
 import SleepSummaryCard from '@/components/dashboard/SleepSummaryCard';
 import FitbitAnalysisTabs from '@/components/dashboard/FitbitAnalysisTabs';
 import LastWorkoutCard from '@/components/dashboard/LastWorkoutCard';
+import CoachInsightCard from '@/components/dashboard/CoachInsightCard';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -165,6 +166,9 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* AI Coach Insight */}
+        <CoachInsightCard />
 
         {/* Today Overview - Primary Stats */}
         <section className="space-y-2">
