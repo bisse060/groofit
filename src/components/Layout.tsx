@@ -21,6 +21,7 @@ import {
   Sun,
   HeartPulse,
   FlaskConical,
+  Sparkles,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -45,6 +46,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/workouts', icon: Dumbbell, label: t('nav.workouts') },
     { path: '/exercises', icon: BookOpen, label: t('nav.exercises') },
     { path: '/comparisons', icon: GitCompare, label: t('nav.comparisons') },
+    { path: '/coach', icon: Sparkles, label: 'Coach' },
   ];
 
   if (isAdmin) {
