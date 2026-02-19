@@ -428,8 +428,16 @@ Gisteren: ${yesterdayContext}`;
       const result = await response.json();
       const insightText = result.choices?.[0]?.message?.content?.trim();
 
+      if (!insightText) {
+        console.error("AI returned empty insight, raw result:", JSON.stringify(result));
+        return new Response(
+          JSON.stringify({ error: "Geen inzicht gegenereerd" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ insight: insightText || null }),
+        JSON.stringify({ insight: insightText }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

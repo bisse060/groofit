@@ -52,7 +52,9 @@ export default function CoachInsightCard() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) {
-        setError(true);
+        // Nog niet ingelogd, stil afbreken
+        setLoading(false);
+        setRefreshing(false);
         return;
       }
 
