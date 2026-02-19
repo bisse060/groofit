@@ -90,7 +90,7 @@ Gem. stappen: ${dailyLogs.length > 0 ? Math.round(dailyLogs.reduce((a, l) => a +
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-2.5-flash",
             messages: [
               { role: "system", content: systemContext },
               { role: "user", content: "Geef mij een persoonlijke wekelijkse tip op basis van mijn data." },
