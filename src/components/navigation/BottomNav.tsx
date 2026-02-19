@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera, UtensilsCrossed, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, FileText, Dumbbell, User, Shield, HeartPulse, MoreHorizontal, Ruler, GitCompare, BookOpen, Camera, UtensilsCrossed, FlaskConical, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +19,7 @@ const moreItems = [
   { path: '/measurements', icon: Ruler, labelKey: 'nav.measurements' },
   { path: '/comparisons', icon: GitCompare, labelKey: 'nav.comparisons' },
   { path: '/exercises', icon: BookOpen, labelKey: 'nav.exercises' },
+  { path: '/coach', icon: Sparkles, labelKey: 'nav.coach' },
 ];
 
 export default function BottomNav() {
