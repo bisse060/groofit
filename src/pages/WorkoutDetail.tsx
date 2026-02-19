@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -313,18 +313,50 @@ export default function WorkoutDetail() {
     }
   };
 
-  const updateSet = async (setId: string, field: keyof WorkoutSet, value: any) => {
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const updateSetLocal = useCallback((setId: string, field: keyof WorkoutSet, value: any) => {
+    // Update local state immediately
+    setExercises(prev => prev.map(ex => ({
+      ...ex,
+      sets: ex.sets.map(s => s.id === setId ? { ...s, [field]: value } : s)
+    })));
+
+    // Debounce the DB save
+    const key = `${setId}-${field}`;
+    if (debounceTimers.current[key]) {
+      clearTimeout(debounceTimers.current[key]);
+    }
+    debounceTimers.current[key] = setTimeout(async () => {
+      try {
+        const { error } = await supabase.from('workout_sets').update({ [field]: value }).eq('id', setId);
+        if (error) throw error;
+      } catch (error) {
+        toast.error('Fout bij het updaten van set');
+      }
+      delete debounceTimers.current[key];
+    }, 600);
+  }, []);
+
+  const updateSetImmediate = async (setId: string, field: keyof WorkoutSet, value: any) => {
+    setExercises(prev => prev.map(ex => ({
+      ...ex,
+      sets: ex.sets.map(s => s.id === setId ? { ...s, [field]: value } : s)
+    })));
     try {
       const { error } = await supabase.from('workout_sets').update({ [field]: value }).eq('id', setId);
       if (error) throw error;
-      setExercises(prev => prev.map(ex => ({
-        ...ex,
-        sets: ex.sets.map(s => s.id === setId ? { ...s, [field]: value } : s)
-      })));
     } catch (error) {
       toast.error('Fout bij het updaten van set');
     }
   };
+
+  // Flush pending saves on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+    };
+  }, []);
 
   const deleteExercise = async (workoutExerciseId: string) => {
     try {
@@ -677,7 +709,7 @@ export default function WorkoutDetail() {
                             type="number"
                             step="0.5"
                             value={set.weight ?? ''}
-                            onChange={(e) => updateSet(set.id, 'weight', parseFloat(e.target.value) || null)}
+                            onChange={(e) => updateSetLocal(set.id, 'weight', e.target.value === '' ? null : parseFloat(e.target.value))}
                             className="w-16 h-7 text-sm"
                             placeholder={lastSet?.weight?.toString() ?? ''}
                             disabled={!canEdit}
@@ -687,7 +719,7 @@ export default function WorkoutDetail() {
                           <Input
                             type="number"
                             value={set.reps ?? ''}
-                            onChange={(e) => updateSet(set.id, 'reps', parseInt(e.target.value) || null)}
+                            onChange={(e) => updateSetLocal(set.id, 'reps', e.target.value === '' ? null : parseInt(e.target.value))}
                             className="w-14 h-7 text-sm"
                             placeholder={lastSet?.reps?.toString() ?? ''}
                             disabled={!canEdit}
@@ -698,7 +730,7 @@ export default function WorkoutDetail() {
                           <Input
                             type="number"
                             value={set.rir ?? ''}
-                            onChange={(e) => updateSet(set.id, 'rir', parseInt(e.target.value) || null)}
+                            onChange={(e) => updateSetLocal(set.id, 'rir', e.target.value === '' ? null : parseInt(e.target.value))}
                             className="w-14 h-7 text-sm"
                             disabled={!canEdit}
                           />
@@ -707,7 +739,7 @@ export default function WorkoutDetail() {
                         <td className="p-1.5 text-center">
                           <Checkbox
                             checked={set.completed}
-                            onCheckedChange={(checked) => updateSet(set.id, 'completed', checked)}
+                            onCheckedChange={(checked) => updateSetImmediate(set.id, 'completed', checked)}
                             disabled={!canEdit}
                           />
                         </td>
