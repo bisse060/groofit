@@ -130,6 +130,11 @@
     box-sizing: border-box;
   }
 
+  /* Prevent layout shift when virtual keyboard opens on mobile */
+  html, body {
+    overflow-anchor: auto;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
     font-size: 15px;
