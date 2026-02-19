@@ -53,7 +53,93 @@ Deno.serve(async (req) => {
     const { action, messages: chatMessages, routineName, routineDescription } = body;
     console.log("[ai-coach] action:", action);
 
-    // --- Build user context ---
+    // =====================
+    // ACTION: dashboard-insight — lichte actie, aparte snelle route VOOR de zware context-opbouw
+    // =====================
+    if (action === "dashboard-insight") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+      const sevenDaysAgo2 = new Date();
+      sevenDaysAgo2.setDate(sevenDaysAgo2.getDate() - 7);
+      const sevenDaysStr2 = sevenDaysAgo2.toISOString().split("T")[0];
+
+      console.log("[ai-coach] fetching insight data for user", user.id);
+      const [profileRes2, yesterdayLogRes, yesterdaySleepRes, weekLogsRes] = await Promise.all([
+        supabase.from("profiles").select("full_name, current_weight, target_weight, goals").eq("id", user.id).single(),
+        supabase.from("daily_logs").select("steps, calorie_intake, calorie_burn, resting_heart_rate").eq("user_id", user.id).eq("log_date", yesterdayStr).maybeSingle(),
+        supabase.from("sleep_logs").select("duration_minutes, efficiency, score").eq("user_id", user.id).eq("date", yesterdayStr).maybeSingle(),
+        supabase.from("daily_logs").select("steps, calorie_intake, active_minutes_very").eq("user_id", user.id).gte("log_date", sevenDaysStr2).order("log_date", { ascending: false }),
+      ]);
+
+      console.log("[ai-coach] insight data fetched, profile:", !!profileRes2.data, "errors:", profileRes2.error?.message);
+
+      const p = profileRes2.data;
+      const yesterdayLog = yesterdayLogRes.data;
+      const yesterdaySleep = yesterdaySleepRes.data;
+      const weekLogs = weekLogsRes.data || [];
+
+      const avgSteps = weekLogs.length > 0 ? Math.round(weekLogs.reduce((s, l) => s + (l.steps || 0), 0) / weekLogs.length) : 0;
+
+      const insightSystemPrompt = `Je bent een persoonlijke AI-coach. Antwoord altijd in het Nederlands.
+
+Gebruiker: ${p?.full_name || "Onbekend"}, gewicht ${p?.current_weight || "?"} kg, doel: ${p?.target_weight || "?"} kg.
+Doelen: ${p?.goals || "niet ingevuld"}.
+Gemiddeld aantal stappen afgelopen week: ${avgSteps}.`;
+
+      const yesterdayContext = `Gisteren (${yesterdayStr}): ${yesterdayLog?.steps ? yesterdayLog.steps + " stappen" : "geen stappen"}, ${yesterdayLog?.calorie_intake ? yesterdayLog.calorie_intake + " kcal intake" : "geen calorie-data"}, ${yesterdaySleep ? Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10 + "u slaap (score " + (yesterdaySleep.score || "?") + ")" : "geen slaapdata"}.`;
+
+      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard. Wees direct, stimulerend en concreet. Geen opener als "Hoi". Begin gewoon met de observatie.
+
+${yesterdayContext}`;
+
+      console.log("[ai-coach] calling AI gateway for dashboard-insight");
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-5-mini",
+          messages: [
+            { role: "system", content: insightSystemPrompt },
+            { role: "user", content: insightPrompt },
+          ],
+          max_tokens: 120,
+        }),
+      });
+
+      console.log("[ai-coach] AI gateway response status:", response.status);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("[ai-coach] AI gateway error:", response.status, errText);
+        return new Response(JSON.stringify({ error: "Fout bij genereren inzicht: " + response.status }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await response.json();
+      console.log("[ai-coach] AI gateway choices:", result.choices?.length);
+      const insightText = result.choices?.[0]?.message?.content?.trim();
+
+      if (!insightText) {
+        console.error("[ai-coach] empty insight, raw:", JSON.stringify(result));
+        return new Response(JSON.stringify({ error: "Geen inzicht gegenereerd" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ insight: insightText }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- Build user context (for chat, generate-routine, weekly-tip) ---
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysStr = sevenDaysAgo.toISOString().split("T")[0];
@@ -376,77 +462,6 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
       return new Response(JSON.stringify({ success: true, tip: tipContent }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    // =====================
-    // ACTION: dashboard-insight (kort persoonlijk inzicht voor dashboard)
-    // =====================
-    if (action === "dashboard-insight") {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-      // Haal gisteren data op
-      const { data: yesterdayLog } = await supabase
-        .from("daily_logs")
-        .select("steps, calorie_intake, calorie_burn, resting_heart_rate, active_minutes_very")
-        .eq("user_id", user.id)
-        .eq("log_date", yesterdayStr)
-        .maybeSingle();
-
-      const { data: yesterdaySleep } = await supabase
-        .from("sleep_logs")
-        .select("duration_minutes, efficiency, score")
-        .eq("user_id", user.id)
-        .eq("date", yesterdayStr)
-        .maybeSingle();
-
-      const yesterdayContext = yesterdayLog || yesterdaySleep
-        ? `Gisteren (${yesterdayStr}): ${yesterdayLog?.steps ? yesterdayLog.steps + " stappen" : "geen stappen"}, ${yesterdayLog?.calorie_intake ? yesterdayLog.calorie_intake + " kcal intake" : ""}, ${yesterdaySleep ? Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10 + "u slaap (score " + (yesterdaySleep.score || "?") + ")" : "geen slaapdata"}.`
-        : "Geen data van gisteren beschikbaar.";
-
-      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard van de gebruiker. Combineer gisteren met de trend van de afgelopen week. Wees direct, stimulerend en concreet. Benoem iets specifeks als dat opvalt (goed of slecht). Geen opener als "Hoi" of "Geweldig". Geen vragen. Begin gewoon met de observatie.
-
-Gisteren: ${yesterdayContext}`;
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-5-mini",
-          messages: [
-            { role: "system", content: systemContext },
-            { role: "user", content: insightPrompt },
-          ],
-          max_tokens: 120,
-        }),
-      });
-
-      if (!response.ok) {
-        return new Response(JSON.stringify({ error: "Fout bij genereren inzicht" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const result = await response.json();
-      const insightText = result.choices?.[0]?.message?.content?.trim();
-
-      if (!insightText) {
-        console.error("AI returned empty insight, raw result:", JSON.stringify(result));
-        return new Response(
-          JSON.stringify({ error: "Geen inzicht gegenereerd" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ insight: insightText }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     return new Response(JSON.stringify({ error: "Onbekende actie" }), {
