@@ -20,20 +20,21 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create authenticated client to get user
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const token = authHeader.replace("Bearer ", "");
 
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    // Validate JWT by passing token explicitly to getUser
+    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "");
+    const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
+
     if (userError || !user) {
+      console.error("JWT validation error:", userError?.message);
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
