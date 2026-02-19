@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,9 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
+  console.log(`[ai-coach] ${req.method} ${req.url}`);
+  
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -18,9 +19,13 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
 
     const authHeader = req.headers.get("Authorization");
+    console.log("[ai-coach] auth header present:", !!authHeader);
+    
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("[ai-coach] missing or invalid auth header");
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -28,13 +33,13 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    console.log("[ai-coach] validating token, length:", token.length);
 
-    // Validate JWT by passing token explicitly to getUser
-    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "");
+    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
+    console.log("[ai-coach] getUser result - user:", user?.id, "error:", userError?.message);
 
     if (userError || !user) {
-      console.error("JWT validation error:", userError?.message);
       return new Response(JSON.stringify({ error: "Niet geautoriseerd" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,6 +51,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { action, messages: chatMessages, routineName, routineDescription } = body;
+    console.log("[ai-coach] action:", action);
 
     // --- Build user context ---
     const sevenDaysAgo = new Date();
