@@ -377,7 +377,7 @@ export default function Coach() {
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-sm text-foreground leading-tight">Sven</h1>
+            <h1 className="font-semibold text-sm text-foreground leading-tight">Coach Sven</h1>
             <p className="text-xs text-muted-foreground truncate">Persoonlijk advies op basis van jouw data</p>
           </div>
           <button
@@ -403,7 +403,7 @@ export default function Coach() {
                 <div className="flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 mx-auto">
                   <Sparkles className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-base font-semibold">Hoi! Ik ben Sven</h2>
+                <h2 className="text-base font-semibold">Hoi! Ik ben Coach Sven</h2>
                 <p className="text-xs text-muted-foreground max-w-xs mx-auto">
                   Ik ken jouw trainingen, metingen en slaapdata. Stel me een vraag!
                 </p>
@@ -510,7 +510,7 @@ export default function Coach() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Stel Sven een vraag..."
+              placeholder="Stel Coach Sven een vraag..."
               className="min-h-[40px] max-h-28 resize-none rounded-xl text-sm"
               disabled={isLoading}
               rows={1}
