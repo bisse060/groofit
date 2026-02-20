@@ -221,10 +221,65 @@ Gebruik deze data om gepersonaliseerde antwoorden te geven. Als data ontbreekt, 
     // ACTION: chat (streaming)
     // =====================
     if (action === "chat") {
-      const messages = [
-        { role: "system", content: systemContext },
-        ...(chatMessages || []),
-      ];
+      const lastUserMsg = (chatMessages || []).filter((m: any) => m.role === "user").pop()?.content?.toLowerCase() || "";
+      const isPhotoRequest = ["foto", "photo", "afbeelding", "vergelijk", "progressiefoto", "progress foto", "lichaam", "voor en na", "visueel"].some(k => lastUserMsg.includes(k));
+
+      let photoContext = "";
+      if (isPhotoRequest) {
+        console.log("[ai-coach] photo request detected, fetching photos");
+        const { data: photos } = await supabase
+          .from("progress_photos")
+          .select("id, photo_url, photo_date, photo_type, measurement_id")
+          .eq("user_id", user.id)
+          .order("photo_date", { ascending: false })
+          .limit(6);
+
+        if (photos && photos.length > 0) {
+          // Generate signed URLs for each photo (valid for 5 min)
+          const signedPhotos = await Promise.all(
+            photos.map(async (p) => {
+              const { data: signed } = await supabase.storage
+                .from("progress-photos")
+                .createSignedUrl(p.photo_url, 300);
+              return { ...p, signedUrl: signed?.signedUrl };
+            })
+          );
+          const validPhotos = signedPhotos.filter(p => p.signedUrl);
+          console.log("[ai-coach] fetched", validPhotos.length, "signed photo URLs");
+
+          if (validPhotos.length > 0) {
+            photoContext = `\n\n## Progressiefoto's (${validPhotos.length} beschikbaar)\n` +
+              validPhotos.map(p => `- ${p.photo_date} | ${p.photo_type} | URL: ${p.signedUrl}`).join("\n");
+          }
+        }
+      }
+
+      // Build messages, inject photo URLs as vision content in last user message if photos found
+      let messagesForAI: any[];
+      if (isPhotoRequest && photoContext) {
+        // Replace last user message with vision content including image URLs
+        const msgs = [...(chatMessages || [])];
+        const lastUserIdx = msgs.map((m: any) => m.role).lastIndexOf("user");
+        if (lastUserIdx !== -1) {
+          const lastUserContent = msgs[lastUserIdx].content;
+          const signedUrls = photoContext.match(/https:\/\/[^\s]+/g) || [];
+          const contentParts: any[] = [{ type: "text", text: lastUserContent + "\n\nHieronder de beschikbare progressiefoto's:" }];
+          // Add up to 4 images as vision content (max to avoid token limits)
+          signedUrls.slice(0, 4).forEach(url => {
+            contentParts.push({ type: "image_url", image_url: { url, detail: "low" } });
+          });
+          msgs[lastUserIdx] = { role: "user", content: contentParts };
+        }
+        messagesForAI = [
+          { role: "system", content: systemContext },
+          ...msgs,
+        ];
+      } else {
+        messagesForAI = [
+          { role: "system", content: systemContext },
+          ...(chatMessages || []),
+        ];
+      }
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -234,7 +289,7 @@ Gebruik deze data om gepersonaliseerde antwoorden te geven. Als data ontbreekt, 
         },
         body: JSON.stringify({
           model: "openai/gpt-5-mini",
-          messages,
+          messages: messagesForAI,
           stream: true,
         }),
       });
