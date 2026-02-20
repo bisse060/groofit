@@ -5,13 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { format } from 'date-fns';
-import { Plus, Camera, X, Trash2, Pencil } from 'lucide-react';
+import { Plus, Camera, X, Trash2, Pencil, Sparkles, Loader2 } from 'lucide-react';
 import { ImageCropper } from '@/components/ImageCropper';
 import { signPhotoUrls } from '@/lib/storage-utils';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +47,9 @@ export default function Measurements() {
   const [measurementPhotos, setMeasurementPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<string | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [showAiDialog, setShowAiDialog] = useState(false);
   const [formData, setFormData] = useState({
     measurement_date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
@@ -241,7 +245,49 @@ export default function Measurements() {
         });
 
         await Promise.all(uploadPromises);
-        toast.success('Measurement and photos saved successfully!');
+        toast.success('Meting opgeslagen!');
+
+        // Trigger AI analysis for new measurement
+        setShowForm(false);
+        setFormData({
+          measurement_date: format(new Date(), 'yyyy-MM-dd'),
+          weight: '',
+          shoulder_cm: '',
+          chest_cm: '',
+          waist_cm: '',
+          hips_cm: '',
+          bicep_left_cm: '',
+          bicep_right_cm: '',
+          notes: '',
+        });
+        setPhotos({ front: null, side: null, back: null });
+        loadMeasurements();
+
+        // Show AI dialog and fetch analysis
+        setAiAnalysis(null);
+        setShowAiDialog(true);
+        setAiAnalysisLoading(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const resp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({ action: 'analyze-measurement', measurementId: measurement.id }),
+            }
+          );
+          const data = await resp.json();
+          setAiAnalysis(data.analysis || data.error || 'Geen analyse beschikbaar.');
+        } catch {
+          setAiAnalysis('Kon geen analyse ophalen. Probeer het later opnieuw.');
+        } finally {
+          setAiAnalysisLoading(false);
+        }
+        return; // Early return, form already reset above
       }
 
       setShowForm(false);
@@ -343,6 +389,33 @@ export default function Measurements() {
 
   return (
     <Layout>
+      {/* AI Analysis Dialog */}
+      <Dialog open={showAiDialog} onOpenChange={setShowAiDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Coach Analyse
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {aiAnalysisLoading ? (
+              <div className="flex items-center gap-3 text-muted-foreground py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="text-sm">Coach analyseert je meting...</span>
+              </div>
+            ) : (
+              <p className="text-sm leading-relaxed">{aiAnalysis}</p>
+            )}
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setShowAiDialog(false)} size="sm">
+              Sluiten
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {cropImage.url && cropImage.type && (
         <ImageCropper
           image={cropImage.url}
