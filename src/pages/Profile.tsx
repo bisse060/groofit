@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw, Dumbbell } from 'lucide-react';
+import { Moon, Sun, Monitor, Activity, Unlink, Crown, UtensilsCrossed, RefreshCw, Dumbbell, Sparkles, ShieldCheck, Image, Database } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -49,6 +49,9 @@ export default function Profile() {
   const [connectingFatsecret, setConnectingFatsecret] = useState(false);
   const [syncingFatsecret, setSyncingFatsecret] = useState(false);
   const [showRir, setShowRir] = useState(() => localStorage.getItem('showRir') !== 'false');
+  const [aiEnabled, setAiEnabled] = useState(() => localStorage.getItem('ai_enabled') !== 'false');
+  const [aiPhotosAccess, setAiPhotosAccess] = useState(() => localStorage.getItem('ai_photos_access') === 'true');
+  const [aiDataAccess, setAiDataAccess] = useState(() => localStorage.getItem('ai_data_access') !== 'false');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -452,7 +455,7 @@ export default function Profile() {
                   )}
                   
                   {syncProgress && syncProgress.status === 'completed' && (
-                    <div className="p-2 bg-green-500/10 text-green-700 dark:text-green-400 rounded text-xs">
+                    <div className="p-2 bg-primary/10 text-primary rounded text-xs">
                       ✓ Import voltooid! Alle {syncProgress.total_days} dagen zijn gesynchroniseerd.
                     </div>
                   )}
@@ -566,6 +569,90 @@ export default function Profile() {
                 }}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Assistent
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <p className="text-sm text-muted-foreground">
+              De AI Coach gebruikt jouw trainingen, slaapdata, stappen en doelen om persoonlijke inzichten en advies te geven. Hier bepaal jij wat de assistent mag inzien.
+            </p>
+
+            {/* Master toggle */}
+            <div className="flex items-center justify-between py-2 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 shrink-0">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">AI Assistent inschakelen</p>
+                  <p className="text-xs text-muted-foreground">Sta de AI Coach toe om jou te begeleiden</p>
+                </div>
+              </div>
+              <Switch
+                checked={aiEnabled}
+                onCheckedChange={(checked) => {
+                  setAiEnabled(checked);
+                  localStorage.setItem('ai_enabled', String(checked));
+                  toast.success(checked ? 'AI Assistent ingeschakeld' : 'AI Assistent uitgeschakeld');
+                }}
+              />
+            </div>
+
+            {/* Granular permissions — only shown when AI is enabled */}
+            {aiEnabled && (
+              <div className="space-y-4 pl-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Toegang tot gegevens</p>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">
+                      <Database className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Gezondheidsdata</p>
+                      <p className="text-xs text-muted-foreground">Stappen, slaap, trainingen, metingen en voeding</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={aiDataAccess}
+                    onCheckedChange={(checked) => {
+                      setAiDataAccess(checked);
+                      localStorage.setItem('ai_data_access', String(checked));
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">
+                      <Image className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Voortgangsfoto's</p>
+                      <p className="text-xs text-muted-foreground">Toegang tot je opgeslagen voortgangsfoto's</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={aiPhotosAccess}
+                    onCheckedChange={(checked) => {
+                      setAiPhotosAccess(checked);
+                      localStorage.setItem('ai_photos_access', String(checked));
+                    }}
+                  />
+                </div>
+
+                <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground leading-relaxed">
+                  🔒 Je gegevens worden nooit gedeeld met derden. De AI Coach verwerkt data uitsluitend om jou persoonlijk advies te geven binnen de app.
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
