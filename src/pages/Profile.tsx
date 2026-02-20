@@ -581,7 +581,7 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground">
-              De AI Coach gebruikt jouw trainingen, slaapdata, stappen en doelen om persoonlijke inzichten en advies te geven. Hier bepaal jij wat de assistent mag inzien.
+              Sven gebruikt jouw trainingen, slaapdata, stappen en doelen om persoonlijke inzichten en advies te geven. Hier bepaal jij wat de assistent mag inzien.
             </p>
 
             {/* Master toggle */}
@@ -592,7 +592,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <p className="text-sm font-medium">AI Assistent inschakelen</p>
-                  <p className="text-xs text-muted-foreground">Sta de AI Coach toe om jou te begeleiden</p>
+                  <p className="text-xs text-muted-foreground">Sta Sven toe om jou te begeleiden</p>
                 </div>
               </div>
               <Switch
@@ -649,7 +649,7 @@ export default function Profile() {
                 </div>
 
                 <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground leading-relaxed">
-                  🔒 Je gegevens worden nooit gedeeld met derden. De AI Coach verwerkt data uitsluitend om jou persoonlijk advies te geven binnen de app.
+                  🔒 Je gegevens worden nooit gedeeld met derden. Sven verwerkt data uitsluitend om jou persoonlijk advies te geven binnen de app.
                 </div>
               </div>
             )}

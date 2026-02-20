@@ -104,7 +104,7 @@ export default function CoachInsightCard() {
         <div className="flex items-center justify-center w-7 h-7 rounded-full bg-muted shrink-0">
           <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
-        <p className="flex-1 text-sm text-muted-foreground">AI Coach kon geen inzicht laden.</p>
+        <p className="flex-1 text-sm text-muted-foreground">Sven kon geen inzicht laden.</p>
         <button
           onClick={() => fetchInsight(true)}
           disabled={refreshing}
@@ -125,7 +125,7 @@ export default function CoachInsightCard() {
         <Sparkles className="h-3.5 w-3.5 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-semibold text-primary uppercase tracking-wide mb-0.5">AI Coach</p>
+        <p className="text-[11px] font-semibold text-primary uppercase tracking-wide mb-0.5">Sven</p>
         <p className="text-sm text-foreground leading-snug">{insight}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0 mt-0.5">
