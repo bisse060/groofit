@@ -503,6 +503,140 @@ Maak een compleet trainingschema aan via de create_routine tool. Gebruik oefenin
     }
 
     // =====================
+    // ACTION: analyze-measurement — AI analyse na opslaan meting
+    // =====================
+    if (action === "analyze-measurement") {
+      const { measurementId } = body;
+
+      // Fetch the new measurement
+      const { data: newMeasurement } = await supabase
+        .from("measurements")
+        .select("*")
+        .eq("id", measurementId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!newMeasurement) {
+        return new Response(JSON.stringify({ error: "Meting niet gevonden" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch previous measurement for comparison
+      const { data: prevMeasurements } = await supabase
+        .from("measurements")
+        .select("*")
+        .eq("user_id", user.id)
+        .lt("measurement_date", newMeasurement.measurement_date)
+        .order("measurement_date", { ascending: false })
+        .limit(1);
+
+      const prev = prevMeasurements?.[0];
+
+      // Fetch photos for this measurement
+      const { data: photos } = await supabase
+        .from("progress_photos")
+        .select("photo_url, photo_type, photo_date")
+        .eq("measurement_id", measurementId)
+        .eq("user_id", user.id);
+
+      // Generate signed URLs for photos
+      let signedPhotos: { url: string; type: string }[] = [];
+      if (photos && photos.length > 0) {
+        const signed = await Promise.all(
+          photos.map(async (p) => {
+            const { data } = await supabase.storage
+              .from("progress-photos")
+              .createSignedUrl(p.photo_url, 300);
+            return data?.signedUrl ? { url: data.signedUrl, type: p.photo_type } : null;
+          })
+        );
+        signedPhotos = signed.filter(Boolean) as { url: string; type: string }[];
+      }
+
+      const formatM = (m: any) => [
+        m.weight ? `${m.weight} kg` : null,
+        m.shoulder_cm ? `schouders ${m.shoulder_cm} cm` : null,
+        m.chest_cm ? `borst ${m.chest_cm} cm` : null,
+        m.waist_cm ? `taille ${m.waist_cm} cm` : null,
+        m.hips_cm ? `heupen ${m.hips_cm} cm` : null,
+        m.bicep_left_cm ? `bicep L ${m.bicep_left_cm} cm` : null,
+        m.bicep_right_cm ? `bicep R ${m.bicep_right_cm} cm` : null,
+      ].filter(Boolean).join(", ");
+
+      let analysisPrompt = `De gebruiker heeft zojuist een nieuwe meting ingevoerd.
+
+Nieuwe meting (${newMeasurement.measurement_date}): ${formatM(newMeasurement)}`;
+
+      if (prev) {
+        // Calculate deltas
+        const delta = (a: number | null, b: number | null) =>
+          a && b ? (a - b > 0 ? `+${(a - b).toFixed(1)}` : (a - b).toFixed(1)) : null;
+
+        const deltas = [
+          delta(newMeasurement.weight, prev.weight) ? `gewicht ${delta(newMeasurement.weight, prev.weight)} kg` : null,
+          delta(newMeasurement.shoulder_cm, prev.shoulder_cm) ? `schouders ${delta(newMeasurement.shoulder_cm, prev.shoulder_cm)} cm` : null,
+          delta(newMeasurement.chest_cm, prev.chest_cm) ? `borst ${delta(newMeasurement.chest_cm, prev.chest_cm)} cm` : null,
+          delta(newMeasurement.waist_cm, prev.waist_cm) ? `taille ${delta(newMeasurement.waist_cm, prev.waist_cm)} cm` : null,
+          delta(newMeasurement.hips_cm, prev.hips_cm) ? `heupen ${delta(newMeasurement.hips_cm, prev.hips_cm)} cm` : null,
+          delta(newMeasurement.bicep_left_cm, prev.bicep_left_cm) ? `bicep L ${delta(newMeasurement.bicep_left_cm, prev.bicep_left_cm)} cm` : null,
+          delta(newMeasurement.bicep_right_cm, prev.bicep_right_cm) ? `bicep R ${delta(newMeasurement.bicep_right_cm, prev.bicep_right_cm)} cm` : null,
+        ].filter(Boolean).join(", ");
+
+        analysisPrompt += `
+Vorige meting (${prev.measurement_date}): ${formatM(prev)}
+Veranderingen: ${deltas || "geen vergelijkbare waarden"}`;
+      } else {
+        analysisPrompt += `\nDit is de eerste meting van de gebruiker.`;
+      }
+
+      if (signedPhotos.length > 0) {
+        analysisPrompt += `\n\nEr zijn ${signedPhotos.length} progressiefoto's bijgevoegd. Analyseer ook de visuele voortgang indien zichtbaar.`;
+      }
+
+      analysisPrompt += `\n\nGeef een korte, motiverende analyse in 2-4 zinnen. Focus op de meest opvallende verandering. Eindig met een concrete tip of aansporing voor de komende periode.`;
+
+      // Build vision content if photos available
+      const userContent: any[] = [{ type: "text", text: analysisPrompt }];
+      signedPhotos.slice(0, 3).forEach(p => {
+        userContent.push({ type: "image_url", image_url: { url: p.url, detail: "low" } });
+      });
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: signedPhotos.length > 0 ? "openai/gpt-5-mini" : "openai/gpt-5-nano",
+          messages: [
+            { role: "system", content: systemContext },
+            { role: "user", content: userContent },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("[ai-coach] analyze-measurement error:", response.status, errText);
+        return new Response(JSON.stringify({ error: "Fout bij analyse" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await response.json();
+      const analysisText = result.choices?.[0]?.message?.content?.trim();
+
+      return new Response(
+        JSON.stringify({ analysis: analysisText }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // =====================
     // ACTION: weekly-tip (called by cron job or admin)
     // =====================
     if (action === "weekly-tip") {
