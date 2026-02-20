@@ -84,7 +84,7 @@ export default function Admin() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, created_at, current_weight, target_weight, height_cm, goals, instagram_username')
+        .select('id, full_name, created_at, current_weight, target_weight, height_cm, goals, instagram_username, last_login_at, total_app_minutes')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -351,10 +351,12 @@ export default function Admin() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Tier</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Gewicht</TableHead>
+                  <TableHead>Doel</TableHead>
+                  <TableHead>Aangemeld</TableHead>
+                  <TableHead>Laatste login</TableHead>
+                  <TableHead>App-tijd</TableHead>
+                  <TableHead className="text-right">Acties</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,6 +388,16 @@ export default function Admin() {
                     <TableCell>{u.current_weight ? `${u.current_weight} kg` : '-'}</TableCell>
                     <TableCell>{u.target_weight ? `${u.target_weight} kg` : '-'}</TableCell>
                     <TableCell>{format(new Date(u.created_at), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell className="text-sm">
+                      {u.last_login_at
+                        ? format(new Date(u.last_login_at), 'dd/MM/yy HH:mm')
+                        : <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {u.total_app_minutes > 0
+                        ? `${Math.floor(u.total_app_minutes / 60)}u ${u.total_app_minutes % 60}m`
+                        : <span className="text-muted-foreground">-</span>}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Sheet>

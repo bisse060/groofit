@@ -544,7 +544,9 @@ export type Database = {
           height_cm: number | null
           id: string
           instagram_username: string | null
+          last_login_at: string | null
           target_weight: number | null
+          total_app_minutes: number
           updated_at: string | null
         }
         Insert: {
@@ -557,7 +559,9 @@ export type Database = {
           height_cm?: number | null
           id: string
           instagram_username?: string | null
+          last_login_at?: string | null
           target_weight?: number | null
+          total_app_minutes?: number
           updated_at?: string | null
         }
         Update: {
@@ -570,7 +574,9 @@ export type Database = {
           height_cm?: number | null
           id?: string
           instagram_username?: string | null
+          last_login_at?: string | null
           target_weight?: number | null
+          total_app_minutes?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -953,6 +959,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      record_session: {
+        Args: { p_duration_minutes: number; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
