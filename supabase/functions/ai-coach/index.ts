@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
             return `- ${w.date}: ${w.title || "Workout"} — ${exercises.length} oefeningen${exerciseSummary.length > 0 ? ": " + exerciseSummary.slice(0, 3).join(", ") : ""}`;
           }).join("\n");
 
-      const insightSystemPrompt = `Je bent een persoonlijke AI-coach. Antwoord altijd in het Nederlands.
+      const insightSystemPrompt = `Je bent een no-nonsense personal trainer. Antwoord altijd in het Nederlands.
 
 Gebruiker: ${p?.full_name || "Onbekend"}, gewicht ${p?.current_weight || "?"} kg, doel: ${p?.target_weight || "?"} kg.
 Doelen: ${p?.goals || "niet ingevuld"}.
@@ -123,7 +123,7 @@ ${workoutContext}`;
         yesterdaySleep ? `${Math.round((yesterdaySleep.duration_minutes || 0) / 60 * 10) / 10}u slaap (score ${yesterdaySleep.score || "?"}, efficiëntie ${yesterdaySleep.efficiency || "?"}%)` : "geen slaapdata",
       ].filter(Boolean).join(", ");
 
-      const insightPrompt = `Geef een korte, persoonlijke inzicht van 1-2 zinnen voor het dashboard. Wees direct, stimulerend en concreet. Baseer je op alle beschikbare data. Geen opener als "Hoi". Begin direct met de observatie.
+      const insightPrompt = `Geef een korte, krachtige coaching-zin voor het dashboard. Max 1-2 zinnen. Direct, motiverend, gebaseerd op de data. Geen opener of afsluiting. Begin meteen met de observatie of aansporing.
 
 ${yesterdayContext}`;
 
@@ -191,9 +191,9 @@ ${yesterdayContext}`;
     const sleepLogs = sleepRes.data || [];
     const dailyLogs = logsRes.data || [];
 
-    const systemContext = `Je bent een persoonlijke AI-coach in de Grofit fitness app. Je bent vriendelijk, motiverend en to-the-point. Je geeft praktisch advies gebaseerd op de data van de gebruiker. Antwoord altijd in het Nederlands.
+    const systemContext = `Je bent een no-nonsense personal trainer en fitness coach in de Grofit app. Je communiceert kort, direct en motiverend — zoals een echte coach in de gym. Maximaal 2-3 zinnen per antwoord tenzij de gebruiker om meer vraagt. Geen lange uitleg, geen opsommingen tenzij nodig. Positief maar eerlijk. Antwoord altijd in het Nederlands.
 
-BELANGRIJK: Als de gebruiker vraagt om een trainingschema, een routine, een trainingsplan of iets vergelijkbaars, beschrijf dan kort wat voor schema je zou aanbevelen (push/pull/legs, full body, etc.) maar zeg ALTIJD aan het einde: "Klik op de knop 'Schema aanmaken' die nu is verschenen om het schema daadwerkelijk op te slaan in de app." Maak nooit een schema alleen via tekst - de app heeft een speciale functie hiervoor die automatisch opent.
+BELANGRIJK: Als de gebruiker vraagt om een trainingschema, een routine, een trainingsplan of iets vergelijkbaars, noem dan in 1-2 zinnen wat je adviseert maar zeg ALTIJD: "Klik op 'Schema aanmaken' om het direct op te slaan in de app." Maak nooit een schema alleen via tekst.
 
 ## Gebruikersprofiel
 Naam: ${profile?.full_name || "Onbekend"}
