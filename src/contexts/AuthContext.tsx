@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const sessionStartRef = useRef<number | null>(null);
+
+  const recordSession = async (userId: string) => {
+    if (sessionStartRef.current === null) return;
+    const minutes = Math.floor((Date.now() - sessionStartRef.current) / 60000);
+    sessionStartRef.current = null;
+    if (minutes < 1) return;
+    await supabase.rpc('record_session', { p_user_id: userId, p_duration_minutes: minutes });
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -29,8 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status after setting user
         if (session?.user) {
+          sessionStartRef.current = Date.now();
           setTimeout(() => {
             checkAdminStatus(session.user.id);
           }, 0);
@@ -45,12 +54,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        sessionStartRef.current = Date.now();
         checkAdminStatus(session.user.id);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Record session on page unload
+    const handleUnload = () => {
+      const uid = supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user && sessionStartRef.current !== null) {
+          const minutes = Math.floor((Date.now() - sessionStartRef.current) / 60000);
+          if (minutes >= 1) {
+            navigator.sendBeacon
+              ? navigator.sendBeacon(`/api/noop`) // fallback – real recording via visibility change
+              : null;
+          }
+        }
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session?.user) return;
+        if (document.visibilityState === 'hidden') {
+          recordSession(data.session.user.id);
+        } else {
+          sessionStartRef.current = Date.now();
+        }
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
@@ -100,8 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Use local scope to clear session even if server-side logout fails
-      // (e.g., when session is already expired/invalid)
+      if (user) await recordSession(user.id);
       await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
       console.error('Sign out error:', error);
